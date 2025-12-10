@@ -1,0 +1,32 @@
+id: pipeline-mrna-library-analysis
+title: "mRNA Library Computational Pipeline"
+domain_tags: [mrna, rna-seq, sequencing, computational]
+complexity: power
+inputs:
+  - name: fastq_files_dir
+    type: directory
+    description: "Directory with paired-end FASTQ files"
+  - name: reference_genome
+    type: file
+    description: "Reference genome FASTA"
+  - name: annotation_gtf
+    type: file
+    description: "Gene annotation GTF"
+outputs:
+  - qc_multiqc_report
+  - alignment_bam_files
+  - counts_matrix_csv
+  - de_results_csv
+runtime:
+  estimated_time_minutes: 240
+  required_tools: [fastqc, star, htseq, deseq2]
+  cost_estimate_usd: 15
+sim_tests:
+  - name: smoke-small-library
+    input: sample_fastq_subset
+    expected_runtime_minutes: 20
+compliance_notes: "Computational pipeline. Data must comply with institutional IRB/IACUC if from human/animal samples."
+version: 1.0.0
+author: newgen-studio
+license: Apache-2.0
+provenance: [rna-seq-community-best-practices]

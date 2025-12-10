@@ -1,0 +1,31 @@
+id: pipeline-viable-counts-imaging
+title: "Viable Colony Counts (Imaging Analysis)"
+domain_tags: [imaging, colony-counting, qc, computational]
+complexity: light
+inputs:
+  - name: plate_images_dir
+    type: directory
+    description: "Directory containing plate images"
+  - name: detection_threshold
+    type: number
+    default: 0.5
+  - name: min_colony_size_px
+    type: number
+    default: 10
+outputs:
+  - colony_counts_csv
+  - annotated_images_dir
+  - qc_report_pdf
+runtime:
+  estimated_time_minutes: 15
+  required_tools: [opencv, scikit-image]
+  cost_estimate_usd: 0
+sim_tests:
+  - name: smoke-imaging
+    input: sample_plate_images
+    expected_runtime_minutes: 2
+compliance_notes: "Computational imaging analysis. No wet-lab procedures."
+version: 1.0.0
+author: newgen-studio
+license: CC-BY-4.0
+provenance: [internal-computational]

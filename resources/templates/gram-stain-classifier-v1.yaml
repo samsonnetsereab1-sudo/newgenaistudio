@@ -1,0 +1,257 @@
+---
+# Gram Stain Classifier v1
+# CNN-based classification of Gram-positive vs Gram-negative staining
+# Scope: Slide image acquisition, preprocessing, classification, QC, localization
+# Regulatory: FDA analytical method validation, Health Canada GMP
+
+metadata:
+  version: "1.0"
+  last_updated: "2025-12-10"
+  regulatory_frameworks:
+    - "FDA Analytical Method Validation"
+    - "Health Canada GMP"
+  safety_principles:
+    - "Computational classification only; human confirmation required"
+    - "No automated culture control without expert review"
+
+image_acquisition:
+  input_source: "Gram-stained slide (standard microbiology protocol)"
+  imaging_device: "Whole-slide scanner (Leica, Zeiss) or brightfield microscope + high-res camera"
+  
+  image_specifications:
+    format: "TIFF (multi-plane OME-TIFF preferred) or PNG"
+    resolution_dpi: 600  # ≥40x magnification equivalent
+    bit_depth: "24-bit RGB or 8-bit grayscale"
+    color_space: "sRGB"
+    metadata_required:
+      - slide_id: "string"
+      - stain_lot_number: "string"
+      - staining_timestamp: "ISO8601"
+      - imaging_timestamp: "ISO8601"
+      - operator_id: "string"
+      - microscope_model: "string"
+      - magnification: "integer (40 or 100x oil immersion)"
+      - illumination_voltage_v: "float (50–60V typical)"
+  
+  slide_standards:
+    positive_control_gram_positive: "Bacillus subtilis or Staphylococcus aureus"
+    positive_control_gram_negative: "Escherichia coli or Pseudomonas aeruginosa"
+    negative_control: "Unstained slide or blank"
+    requirement: "Controls must be present and imaged alongside test slide"
+
+preprocessing:
+  step_1_color_normalization:
+    method: "Reinhard color normalization or Macenko normalization"
+    target_reference: "Reference Gram-stain image (golden standard)"
+    purpose: "Reduce stain variability across slides and imaging conditions"
+  
+  step_2_background_subtraction:
+    method: "Morphological opening (light object detection) + rolling ball algorithm"
+    purpose: "Isolate bacterial cells from background debris"
+  
+  step_3_artifact_removal:
+    method: "Median filtering + morphological cleaning"
+    exclusion_criteria:
+      - "Dust particles or stain precipitate (morphology filtering)"
+      - "Edge artifacts (exclude border 50 pixels)"
+  
+  step_4_tiling:
+    description: "Whole-slide images tiled into overlapping patches for CNN inference"
+    tile_size_pixels: 256
+    overlap_percent: 20
+    purpose: "Manage memory; enable per-tile confidence scoring"
+  
+  output: "Normalized, tiled image dataset ready for classification"
+
+cnn_model:
+  architecture: "EfficientNet-B3 or ResNet-50 (pretrained on ImageNet, fine-tuned)"
+  
+  training_dataset:
+    composition:
+      gram_positive_images: 300
+      gram_negative_images: 300
+      diverse_morphologies:
+        - "Cocci (round)"
+        - "Bacilli (rod)"
+        - "Vibrios (curved)"
+        - "Spirilla (spiral)"
+    augmentation:
+      - "Rotation (±10°)"
+      - "Zoom (0.9–1.1×)"
+      - "Brightness/contrast (±15%)"
+      - "Elastic distortion (σ=10)"
+    train_val_test_split: "[0.70, 0.15, 0.15]"
+  
+  input:
+    tile_size: "256×256 RGB"
+    normalization: "ImageNet mean/std (R: 0.485, G: 0.456, B: 0.406)"
+  
+  output:
+    class_probabilities: "[P(Gram-positive), P(Gram-negative), P(Ambiguous)]"
+    confidence_score: "max(P) ∈ [0, 1]"
+    per_tile_results: "Tile ID → prediction + confidence"
+
+classification_rules:
+  thresholds:
+    high_confidence: "P(class) ≥ 0.90 → Accept prediction without review"
+    medium_confidence: "0.70 ≤ P(class) < 0.90 → Flag for expert review"
+    low_confidence: "P(class) < 0.70 → Reject; require manual microscopy"
+    ambiguous: "P(Ambiguous) > 0.15 → Flag as mixed culture or poor staining"
+  
+  slide_level_aggregation:
+    rule_1: "If ≥80% tiles high-confidence same class → Assign slide to that class"
+    rule_2: "If 20–80% split → Ambiguous; recommend expert review"
+    rule_3: "If >15% ambiguous tiles → Mixed culture suspected"
+
+localization_and_visualization:
+  saliency_maps:
+    method: "Grad-CAM or SHAP (SHapley Additive exPlanations)"
+    output: "Heatmap highlighting regions driving classification decision"
+    visualization: "Overlay on original image (Matplotlib / OpenCV)"
+  
+  segmentation_overlay:
+    method: "U-Net segmentation of bacterial cells (optional)"
+    overlay_color_scheme:
+      gram_positive_cells: "Purple"
+      gram_negative_cells: "Red"
+      ambiguous_cells: "Yellow"
+    output: "PNG with cell-level annotations"
+  
+  per_tile_reporting:
+    tile_id: "string (row-col index)"
+    gram_positive_fraction: "float [0, 1]"
+    gram_negative_fraction: "float [0, 1]"
+    ambiguous_fraction: "float [0, 1]"
+    confidence_score: "float [0, 1]"
+    saliency_map_url: "path to heatmap image"
+
+morphological_classification_optional:
+  additional_labels: "Cocci vs. Bacilli vs. Vibrios vs. Spirilla"
+  secondary_cnn: "Separate model trained on morphology"
+  output: "Gram_type + Morphology (e.g., 'Gram-positive cocci')"
+  accuracy_requirement: "AUC ≥ 0.92 on validation set"
+
+validation_and_acceptance:
+  model_qualification:
+    benchmark_dataset:
+      source: "resources/datasets/synthetic-gram-stain-slides-200-images.json"
+      composition:
+        - "100 Gram-positive slides (5 morphology types)"
+        - "100 Gram-negative slides (5 morphology types)"
+      ground_truth: "Manual classification by 2 expert microscopists (consensus)"
+    
+    acceptance_criteria:
+      slide_level_accuracy_percent_min: 94
+      gram_positive_sensitivity_percent_min: 92
+      gram_negative_sensitivity_percent_min: 92
+      specificity_percent_min: 94
+      auc_roc_min: 0.96
+      f1_score_min: 0.93
+
+  operational_qualification:
+    - "Control slides (Gram-pos, Gram-neg, blank) processed; predictions correct"
+    - "Stain variability test: 3 slide lots; >95% accuracy maintained"
+    - "Microscope alignment: Illumination voltage stability < ±5V; predictions stable"
+
+  ongoing_monitoring:
+    drift_detection: "Monthly validation on fresh control slides"
+    retraining_trigger: "Slide-level accuracy drops below 90%"
+    retraining_dataset: "Accumulated misclassifications + new annotations"
+
+qc_workflow:
+  pre_classification:
+    - "Control slides imaged successfully"
+    - "Stain quality acceptable (color distribution normal)"
+    - "Image metadata complete"
+  
+  post_classification:
+    - "Confidence distribution checked (>85% high-confidence tiles acceptable)"
+    - "Saliency maps reviewed for biological plausibility"
+    - "Outliers flagged for expert review"
+  
+  expert_review_rules:
+    trigger_1: "Medium or low confidence → Auto-flag"
+    trigger_2: "Morphology inconsistent with Gram-type → Flag"
+    trigger_3: "Mixed culture suspected (tile-level splits) → Flag"
+    action: "Expert microscopist reviews raw slide image"
+
+audit_trail:
+  logged_artifacts:
+    - "Input slide image + metadata"
+    - "Preprocessed normalized image"
+    - "Per-tile predictions + confidences (CSV)"
+    - "Slide-level aggregation result"
+    - "Saliency maps (PNG)"
+    - "Segmentation overlay (PNG) if generated"
+    - "Model version (checkpoint ID, training date)"
+    - "QC report"
+    - "Operator ID, timestamp, expert review notes (if applicable)"
+  
+  export_formats:
+    - "JSON (full audit + predictions)"
+    - "CSV (per-tile results)"
+    - "PDF (slide report + visualizations)"
+
+ci_smoke_tests:
+  test_preprocessing:
+    input: "Synthetic Gram-stain image (640×480)"
+    expected: "Normalized image output; no NaN/artifacts"
+    timeout_seconds: 10
+  test_classification:
+    input: "Preprocessed tile (256×256)"
+    expected: "Class probabilities summing to 1.0; confidence ∈ [0, 1]"
+    timeout_seconds: 5
+  test_localization:
+    input: "Slide-level predictions"
+    expected: "Saliency maps generated; overlay PNG valid"
+    timeout_seconds: 15
+  test_control_validation:
+    input: "Control slide images (Gram-pos, Gram-neg, blank)"
+    expected: "All controls classified correctly; confidence > 0.9"
+    timeout_seconds: 10
+
+examples:
+  slide_metadata:
+    slide_id: "SLIDE-20251210-001"
+    organism_expected: "Escherichia coli (Gram-negative rod)"
+    stain_lot: "GRAM-LOT-2025-089"
+    staining_timestamp: "2025-12-10T08:30:00Z"
+    imaging_timestamp: "2025-12-10T09:15:00Z"
+    operator_id: "op-bob-456"
+    microscope_model: "Leica DM-6000"
+    magnification: 100
+    illumination_voltage: 55.0
+
+  tile_level_prediction:
+    slide_id: "SLIDE-20251210-001"
+    tile_id: "tile-005-003"
+    gram_positive_prob: 0.05
+    gram_negative_prob: 0.93
+    ambiguous_prob: 0.02
+    confidence: 0.93
+    classification: "Gram-negative"
+    review_required: false
+
+  slide_level_aggregation:
+    slide_id: "SLIDE-20251210-001"
+    tiles_processed: 42
+    gram_positive_tiles_fraction: 0.07
+    gram_negative_tiles_fraction: 0.88
+    ambiguous_tiles_fraction: 0.05
+    final_classification: "Gram-negative"
+    confidence_score: 0.88
+    morphology_detected: "rods (bacilli)"
+    qc_status: "pass"
+    expert_review_required: false
+    notes: "Clear Gram-negative staining consistent with E. coli rod morphology"
+
+  qc_report:
+    slide_id: "SLIDE-20251210-001"
+    stain_quality: "good (color distribution uniform)"
+    image_quality: "excellent (no artifacts, sharp focus)"
+    tile_confidence_distribution:
+      high_confidence_percent: 88
+      medium_confidence_percent: 10
+      low_confidence_percent: 2
+    overall_status: "pass"
+    expert_review_recommended: false

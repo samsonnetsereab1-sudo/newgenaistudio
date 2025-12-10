@@ -1,0 +1,298 @@
+---
+# BPR (Batch Production Record) Template v1
+# Batch Production Record manifest with e-signature hooks and compliance scaffolding
+# Scope: FDA 21 CFR Part 11 style audit trail, e-signature capture, metadata
+# Regulatory: FDA 21 CFR Part 11, Health Canada GMP, ICH
+
+metadata:
+  version: "1.0"
+  last_updated: "2025-12-10"
+  regulatory_frameworks:
+    - "FDA 21 CFR Part 11 (Electronic Records, Electronic Signatures)"
+    - "Health Canada GMP"
+    - "ICH Q7 (API GMP)"
+  data_integrity_principles:
+    - "ALCOA+ (Attributable, Legible, Contemporaneous, Original, Accurate, Complete, Consistent, Enduring, Available)"
+
+bpr_header:
+  batch_id: "string (unique identifier, e.g., 'BATCH-20251210-001')"
+  batch_description: "string (product name, expression system, target molecule)"
+  batch_size: "number + unit (e.g., '2 L fermentation')"
+  batch_status: "enum [In Progress, Completed, Hold, Rejected, Approved]"
+  
+  dates:
+    start_date: "ISO8601"
+    start_time: "ISO8601"
+    end_date: "ISO8601"
+    end_time: "ISO8601"
+  
+  responsible_parties:
+    production_manager:
+      name: "string"
+      employee_id: "string"
+      signature: "e-signature object (see below)"
+    quality_lead:
+      name: "string"
+      employee_id: "string"
+      signature: "e-signature object"
+    
+  related_documents:
+    - doc_type: "string (Master Cell Bank Certificate, Strain Characterization, SOP)"
+      doc_id: "string"
+      version: "string"
+      approval_date: "ISO8601"
+
+equipment_used:
+  - equipment_id: "string (e.g., 'FERMENTOR-001')"
+    equipment_name: "string (e.g., 'Applikon 2L Fermentor')"
+    serial_number: "string"
+    last_calibration_date: "ISO8601"
+    calibration_due_date: "ISO8601"
+    equipment_status: "enum [Calibrated, Overdue Calibration, Out of Service]"
+
+unit_operations:
+  - operation_id: "string (e.g., 'OP-001-INOCULATION')"
+    operation_name: "string (e.g., 'Inoculation')"
+    responsible_operator:
+      name: "string"
+      employee_id: "string"
+    
+    parameters:
+      - param_name: "string (e.g., 'Inoculum Volume')"
+        planned_value: "number"
+        actual_value: "number"
+        unit: "string (mL, L, %, °C, etc.)"
+        specification_low: "number"
+        specification_high: "number"
+        in_spec: "boolean"
+        timestamp: "ISO8601"
+        notes: "string"
+    
+    in_process_testing:
+      - test_id: "string (e.g., 'IPT-001-VIABILITY')"
+        test_name: "string (e.g., 'Cell Viability')"
+        test_method: "string (e.g., 'Trypan Blue Exclusion')"
+        result_value: "number"
+        result_unit: "string"
+        specification_low: "number"
+        specification_high: "number"
+        in_spec: "boolean"
+        test_timestamp: "ISO8601"
+        tested_by:
+          name: "string"
+          employee_id: "string"
+    
+    operator_observations:
+      - timestamp: "ISO8601"
+        observation: "string (e.g., 'Foam formation observed; antifoam added')"
+        severity: "enum [info, warning, critical]"
+        operator_name: "string"
+
+    operation_completion:
+      completion_status: "enum [Completed, On Hold, Aborted]"
+      completion_timestamp: "ISO8601"
+      completion_verified_by:
+        name: "string"
+        employee_id: "string"
+        signature: "e-signature object"
+
+raw_materials_used:
+  - material_id: "string"
+    material_name: "string"
+    manufacturer: "string"
+    lot_number: "string"
+    quantity_used: "number"
+    unit: "string (g, mL, U, etc.)"
+    date_used: "ISO8601"
+    certificate_of_analysis:
+      received: "boolean"
+      coa_number: "string"
+      coa_issue_date: "ISO8601"
+      storage_condition: "string (2–8°C, room temp, etc.)"
+    
+    quality_assessment:
+      - test_name: "string (e.g., 'Endotoxin')"
+        specification: "string (e.g., '< 5 EU/mL')"
+        actual_result: "string"
+        in_spec: "boolean"
+
+intermediate_products:
+  - intermediate_id: "string"
+    description: "string (e.g., 'Cell Culture Harvest')"
+    quantity_produced: "number"
+    unit: "string"
+    storage_condition: "string"
+    testing_required: "boolean"
+    hold_reason: "string (if on hold)"
+    release_criteria:
+      - criterion: "string"
+        result: "string"
+        met: "boolean"
+
+final_product:
+  batch_yield:
+    target_yield: "number + unit"
+    actual_yield: "number + unit"
+    yield_percent: "number"
+    loss_explanation: "string (if yield < target)"
+  
+  final_product_testing:
+    - test_id: "string (e.g., 'FPT-001-POTENCY')"
+      test_name: "string (e.g., 'Potency Assay')"
+      test_method: "string (reference to SOP)"
+      acceptance_criteria: "string (e.g., '90–110% of standard')"
+      result: "string"
+      result_numeric: "number"
+      unit: "string"
+      pass_fail: "boolean"
+      tested_by:
+        name: "string"
+        employee_id: "string"
+      test_timestamp: "ISO8601"
+      reference_standard_used: "string (lot & date)"
+    
+    overall_status: "enum [All Pass, Conditional Pass, Failed]"
+
+stability_and_release:
+  stability_plan:
+    timepoint_0: "ISO8601"
+    storage_condition: "string (e.g., '–80°C, protected from light')"
+    testing_schedule:
+      - timepoint: "string (e.g., 'Month 0, 3, 6, 12')"
+        planned_tests: "[string, ...]"
+  
+  batch_release_decision:
+    status: "enum [Approved for Release, Approved with Restrictions, Hold Pending, Rejected]"
+    approved_by:
+      name: "string"
+      title: "string (Quality Assurance Manager)"
+      employee_id: "string"
+      signature: "e-signature object"
+    approval_timestamp: "ISO8601"
+  
+  approved_for_use: "boolean"
+  intended_use: "string (e.g., 'Research Use Only', 'Clinical Trial IND')"
+
+deviations_and_investigations:
+  - deviation_id: "string (e.g., 'DEV-20251210-001')"
+    description: "string (root cause description)"
+    severity: "enum [Minor, Major, Critical]"
+    discovered_date: "ISO8601"
+    impact_assessment: "string (product quality impact)"
+    corrective_action: "string"
+    preventive_action: "string"
+    resolution_date: "ISO8601"
+    closed_by:
+      name: "string"
+      employee_id: "string"
+      signature: "e-signature object"
+
+e_signature_schema:
+  e_signature_object:
+    signer_name: "string"
+    signer_title: "string (e.g., 'Production Manager')"
+    signer_employee_id: "string"
+    timestamp: "ISO8601 (server timestamp, not user-provided)"
+    signature_method: "enum [PKI Certificate, FIPS 140-2 Token, Biometric + PIN, Hybrid]"
+    signature_verification:
+      certificate_thumbprint: "string (SHA-256 hash of certificate)"
+      certificate_issuer: "string"
+      certificate_validity: "ISO8601 date range"
+      signature_valid: "boolean"
+    
+    intent_statement: "string (e.g., 'I certify the accuracy and completeness of this batch record')"
+    reason_for_signature: "enum [Approval, Verification, Authorization, Acknowledgment, Review]"
+    
+    system_lock_on_signature: "boolean (record locked against further edits post-signature)"
+    signature_audit_trail:
+      - event: "string (e.g., 'Signature applied', 'Signature verified')"
+        timestamp: "ISO8601"
+        system_id: "string (application & version)"
+
+access_control_and_audit:
+  access_log:
+    - user_id: "string"
+      user_role: "enum [Operator, QA Analyst, QA Manager, System Admin]"
+      action: "enum [View, Edit, Sign, Approve, Archive]"
+      affected_section: "string (e.g., 'Unit Operation OP-001')"
+      timestamp: "ISO8601"
+      ip_address: "string (for regulatory audit trail)"
+      change_summary: "string (if edit)"
+  
+  data_integrity_checks:
+    - check_type: "string (e.g., 'Timestamp Ordering', 'Signature Validity')"
+      check_result: "boolean"
+      last_verified: "ISO8601"
+
+export_and_archival:
+  export_formats:
+    pdf: "Read-only PDF (signed & encrypted)"
+    json: "Full record snapshot (versioned)"
+    xml: "HL7 FHIR representation (for data exchange)"
+  
+  export_timestamp: "ISO8601"
+  exported_by:
+    name: "string"
+    role: "string"
+    signature: "e-signature object (for export certification)"
+  
+  archive_location: "string (URL or file path to immutable archive)"
+  retention_years: 10  # typical for biologics
+
+ci_smoke_tests:
+  test_bpr_json_schema:
+    input: "BPR JSON instance"
+    expected: "Valid against JSON schema; all required fields present"
+    timeout_seconds: 5
+  test_e_signature_validation:
+    input: "Signed BPR with e-signature objects"
+    expected: "Certificate thumbprints match issuer; timestamp server-side"
+    timeout_seconds: 10
+  test_export_pdf_generation:
+    input: "Approved BPR"
+    expected: "PDF locked, encrypted, with embedded signatures"
+    timeout_seconds: 30
+
+compliance_and_validation:
+  21_cfr_part_11_alignment:
+    - requirement: "Unique identification of records"
+      implementation: "batch_id (unique, immutable)"
+    - requirement: "Limiting system access to persons authorized"
+      implementation: "Role-based access control; audit log"
+    - requirement: "Audit trail that independently records initiation, modification, closure"
+      implementation: "access_log with timestamp, user, action"
+    - requirement: "Computer-generated, time-stamped audit trail"
+      implementation: "Server-side timestamps; system_id logged"
+    - requirement: "Legible, accurate, complete, and indelible record"
+      implementation: "JSON + PDF export; edit locks post-signature"
+    - requirement: "Authentication and user identification for e-signatures"
+      implementation: "PKI certificate or biometric + PIN"
+
+examples:
+  minimal_bpr:
+    batch_id: "BATCH-20251210-001"
+    batch_description: "E. coli BL21(DE3) expressing MBP-fusion"
+    start_date: "2025-12-10T08:00:00Z"
+    end_date: "2025-12-11T16:00:00Z"
+    batch_status: "Completed"
+    final_yield: 250  # mg
+    overall_test_status: "All Pass"
+    approved_by: {name: "Alice Johnson", title: "QA Manager"}
+    approved_for_use: true
+
+  unit_operation_example:
+    operation_id: "OP-002-FERMENTATION"
+    operation_name: "Fermentation"
+    parameters:
+      - param_name: "Temperature"
+        planned_value: 37
+        actual_value: 37.2
+        unit: "°C"
+        in_spec: true
+      - param_name: "Dissolved Oxygen"
+        planned_value: 30
+        actual_value: 28
+        unit: "%"
+        in_spec: true
+    completion_status: "Completed"
+    completion_timestamp: "2025-12-11T08:00:00Z"

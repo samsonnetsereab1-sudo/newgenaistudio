@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build || echo 'No build needed'",
+  "env": {
+    "PORT": "4000",
+    "NODE_ENV": "production",
+    "FRONTEND_ORIGIN": "https://newgenaistudio.com"
+  },
+  "functions": {
+    "server.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "api/**": {
+      "memory": 512,
+      "maxDuration": 30
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "graph": [
+    "centrality: degree, betweenness, eigenvector",
+    "community: louvain, leiden",
+    "paths: dijkstra, a*",
+    "motifs: subgraph matching",
+    "gnn: graphsage, gat",
+    "temporal: time-sliced metrics"
+  ],
+  "simulation": [
+    "discrete-event: simpy",
+    "stochastic: monte-carlo",
+    "diffusion: propagation models"
+  ],
+  "optimization": [
+    "bayesian-optimization",
+    "genetic-algorithm",
+    "constraint-solver: or-tools"
+  ],
+  "ml": [
+    "sequence: esm stub",
+    "anomaly: xgboost qc",
+    "explainability: shap"
+  ]
+}

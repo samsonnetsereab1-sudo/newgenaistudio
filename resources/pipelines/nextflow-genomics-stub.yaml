@@ -1,0 +1,16 @@
+id: pipeline-nextflow-genomics-stub
+language: nextflow
+summary: "FASTQ → alignment → variant calling stub"
+steps:
+  - name: qc
+    tool: fastqc
+  - name: align
+    tool: bwa_mem
+  - name: sort_index
+    tool: samtools
+  - name: variant_call
+    tool: gatk_haplotype_caller
+sim_tests:
+  - name: smoke-fast
+    input: sample_fastq_small
+    expected_runtime_minutes: 5

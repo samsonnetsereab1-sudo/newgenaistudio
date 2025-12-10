@@ -1,0 +1,65 @@
+id: schema-sample-metadata-v1
+title: "Canonical Sample Metadata Schema"
+description: "Standard schema for biological sample metadata with chain-of-custody and provenance"
+domain_tags: [metadata, schema, samples, chain-of-custody]
+complexity: light
+inputs: []
+outputs:
+  - validated_sample_json
+runtime:
+  estimated_time_minutes: 0
+version: 1.0.0
+author: newgen-studio
+license: CC-BY-4.0
+schema_definition:
+  type: object
+  required: [sample_id, sample_type, collection_date, owner]
+  properties:
+  sample_id:
+    type: string
+    description: "Unique identifier for the sample"
+  sample_type:
+    type: string
+    enum: [tissue, blood, cell_line, plasmid, protein, nucleic_acid, other]
+  collection_date:
+    type: string
+    format: date-time
+  owner:
+    type: string
+    description: "User or group responsible for the sample"
+  storage_location:
+    type: object
+    properties:
+      facility: { type: string }
+      freezer: { type: string }
+      rack: { type: string }
+      box: { type: string }
+      position: { type: string }
+  barcode:
+    type: string
+    description: "Physical barcode or RFID tag"
+  parent_sample_id:
+    type: string
+    description: "ID of parent sample (for lineage tracking)"
+  chain_of_custody:
+    type: array
+    items:
+      type: object
+      required: [timestamp, actor, action]
+      properties:
+        timestamp: { type: string, format: date-time }
+        actor: { type: string }
+        action: { type: string }
+        notes: { type: string }
+  metadata:
+    type: object
+    description: "Domain-specific metadata"
+  audit:
+    type: array
+    items:
+      type: object
+      properties:
+        timestamp: { type: string, format: date-time }
+        user: { type: string }
+        action: { type: string }
+        changes: { type: object }

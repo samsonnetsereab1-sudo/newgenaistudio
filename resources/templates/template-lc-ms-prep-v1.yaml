@@ -1,0 +1,28 @@
+id: template-lc-ms-prep-v1
+title: "LC-MS Sample Prep"
+domain_tags: [proteomics, lc-ms, sample-prep]
+complexity: light
+inputs:
+  - name: sample_manifest_csv
+    type: file
+  - name: digestion_protocol
+    type: select
+    options: [trypsin, chymotrypsin]
+  - name: gradient_profile
+    type: text
+outputs:
+  - prep_qc_csv
+  - instrument_queue_json
+runtime:
+  estimated_time_minutes: 180
+  required_tools: [pipettes, centrifuge]
+  cost_estimate_usd: 90
+sim_tests:
+  - name: queue-sim
+    samples: 48
+    expected_failures: 0
+compliance_notes: "Check solvent handling policies"
+version: 1.0.0
+author: newgen-studio
+license: CC-BY-4.0
+provenance: ["internal template seed"]

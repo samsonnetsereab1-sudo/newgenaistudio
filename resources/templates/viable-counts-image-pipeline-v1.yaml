@@ -1,0 +1,204 @@
+---
+# Viable Counts Image Pipeline v1
+# Estimates CFU/mL from plate colony images
+# Scope: Image segmentation, colony detection, QC, statistical uncertainty
+# Regulatory: FDA (analytical method validation), ICH Q2(R2)
+
+metadata:
+  version: "1.0"
+  last_updated: "2025-12-10"
+  regulatory_frameworks:
+    - "FDA Analytical Method Validation"
+    - "ICH Q2(R2)"
+  safety_principles:
+    - "Computational analysis only; no procedural instructions"
+    - "Human-in-the-loop for actionable CFU interpretation"
+
+pipeline_stages:
+  1_image_ingestion:
+    input_formats:
+      - "PNG, JPEG"
+      - "OME-TIFF (multi-plane support)"
+    image_standards:
+      resolution_dpi: 600
+      color_space: "sRGB or grayscale"
+      bit_depth: "8-bit or 16-bit"
+      metadata_required:
+        - timestamp: "ISO8601"
+        - sample_id: "string"
+        - plate_id: "string"
+        - well_position: "A1-H12 or A1-P24 for 96/384 plate"
+        - dilution_factor: "integer (e.g., 1e-6)"
+        - media_type: "string (TSA, LB, PDA, etc.)"
+
+  2_preprocessing:
+    steps:
+      - stage: "Color normalization"
+        method: "Reinhard color augmentation or histogram equalization"
+        purpose: "Reduce illumination variance across images"
+      - stage: "Background subtraction"
+        method: "Morphological opening or rolling-ball algorithm"
+        purpose: "Isolate colonies from plate background"
+      - stage: "Artifact removal"
+        method: "Morphological filtering + manual mask (if needed)"
+        purpose: "Remove dust, scratches, non-biological objects"
+    output: "Normalized binary (or normalized intensity) image"
+
+  3_segmentation:
+    primary_method: "U-Net (PyTorch) or DeepLabv3+ (TensorFlow)"
+    model_specs:
+      architecture: "U-Net (encoder-decoder)"
+      input_size: "512x512"
+      output_channels: 2  # background, colony
+      training_data: "500+ annotated images (synthetic + real)"
+      pretrained_weights: true
+    inference:
+      batch_size: 4
+      device: "GPU if available; CPU fallback"
+      post_processing:
+        morphological_clean: "Opening + closing (3x3 kernel)"
+        min_colony_size_pixels: 10
+    output: "Binary segmentation mask (0=background, 1=colony)"
+
+  4_object_detection_and_counting:
+    method: "Connected component analysis (CCA) + morphological features"
+    algorithm: "scipy.ndimage.label"
+    feature_extraction_per_colony:
+      - "Area (pixels)"
+      - "Perimeter (pixels)"
+      - "Eccentricity"
+      - "Solidity (filled / actual area)"
+      - "Mean intensity (from original image)"
+    filtering_rules:
+      - "Area > min_colony_size_pixels AND Area < max_colony_size_pixels"
+      - "Solidity > 0.7 (non-blob-like)"
+      - "Eccentricity < 0.9 (roughly circular)"
+    output:
+      - "Colony count (integer)"
+      - "Per-colony feature vector"
+
+  5_qc_validation:
+    checks:
+      - name: "Plate coverage"
+        rule: "Segmentation covers 95-100% of visible plate area"
+        action_fail: "Flag image; offer manual review"
+      - name: "Saturated pixels"
+        rule: "Fewer than 5% pixels at max intensity"
+        action_fail: "Warn; may indicate overexposed image"
+      - name: "Colony size distribution"
+        rule: "Median colony area 100-1000 pixels; skewness < 2.5"
+        action_fail: "Flag unusual distribution; review by analyst"
+      - name: "Background noise"
+        rule: "False-positive rate (via benchmark) < 2%"
+        action_fail: "Increase segmentation threshold; rerun"
+    output: "QC report {passed: bool, warnings: [str], analyst_review_required: bool}"
+
+  6_colony_count_and_uncertainty:
+    raw_count: "integer from CCA"
+    dilution_adjustment:
+      formula: "CFU/mL = (colony_count / well_volume_mL) × dilution_factor"
+      well_volume_mL: 0.1  # typical for spread-plate
+    uncertainty_quantification:
+      method: "Bootstrapping + Poisson model"
+      bootstrap_samples: 1000
+      algorithm: "Resample segmentation mask; recount"
+      confidence_interval: "[2.5th, 97.5th percentile] of resampled CFU estimates"
+    output:
+      cfu_per_ml_point_estimate: "float"
+      cfu_per_ml_ci_lower: "float"
+      cfu_per_ml_ci_upper: "float"
+      confidence_level: 0.95
+
+  7_replicate_qc:
+    input: "3–5 replicate images (same sample, different wells or plates)"
+    analysis:
+      - "Per-replicate CFU calculation"
+      - "Replicate coefficient of variation (CV)"
+      - "Homogeneity test (one-way ANOVA or Levene's test)"
+    acceptance_criteria:
+      cv_max_percent: 15
+      anova_p_value_min: 0.05  # fail if p < threshold indicates inhomogeneity
+    output: "Mean CFU ± SEM; pass/fail on homogeneity"
+
+  8_validation_and_audit:
+    outputs_logged:
+      - "Input image + metadata"
+      - "Segmentation mask (PNG or TIFF)"
+      - "Per-colony features (CSV)"
+      - "Raw count, CFU estimate, CI"
+      - "QC report"
+      - "Uncertainty quantification details"
+      - "Model version (hash of weights)"
+      - "Timestamp, operator_id (if manual review involved)"
+    audit_trail:
+      created_by: "pipeline (automated) or analyst_id"
+      created_at: "ISO8601"
+      provenance: "model_version, container_digest (if deployed)"
+    export_formats:
+      - "JSON (full record)"
+      - "CSV (summary + per-colony table)"
+
+model_qualification:
+  benchmark_dataset:
+    source: "resources/datasets/synthetic-plate-images-500-samples.json"
+    composition:
+      synthetic_images: 400
+      anonymized_real_images: 100
+    ground_truth: "Manual colony counts (2 annotators; consensus)"
+  acceptance_criteria:
+    mean_absolute_error: 2  # colonies per image
+    median_absolute_error: 1
+    rmse: 3
+  regression_suite:
+    frequency: "On every release"
+    failure_criteria: "Any metric exceeds acceptance threshold"
+
+ci_smoke_tests:
+  test_segmentation_model:
+    input: "Test image from benchmark set"
+    expected_output: "Segmentation mask + colony count ±3 ground truth"
+    timeout_seconds: 30
+  test_cfu_calculation:
+    input: "Segmentation mask + dilution factor"
+    expected_output: "CFU/mL within ±10% of expected"
+    timeout_seconds: 5
+  test_uncertainty_quantification:
+    input: "5 replicate segmentation masks"
+    expected_output: "CV < 20%; CI bounds capture mean"
+    timeout_seconds: 60
+
+examples:
+  image_metadata:
+    sample_id: "SAMPLE-20251210-001"
+    plate_id: "P-2025-001"
+    well_position: "A1"
+    timestamp: "2025-12-10T10:30:00Z"
+    dilution_factor: 1000000
+    media_type: "TSA"
+    organism: "Escherichia coli (model strain)"
+
+  cfu_output:
+    raw_colony_count: 47
+    dilution_factor: 1000000
+    well_volume_ml: 0.1
+    cfu_per_ml_point: 4700000
+    cfu_per_ml_ci_lower: 4300000
+    cfu_per_ml_ci_upper: 5150000
+    confidence_level: 0.95
+    qc_passed: true
+    notes: "Image quality good; low background noise"
+
+  replicate_summary:
+    sample_id: "SAMPLE-20251210-001"
+    replicate_count: 3
+    cfu_estimates:
+      - 4700000
+      - 4600000
+      - 4800000
+    mean_cfu: 4700000
+    sem: 50000
+    cv_percent: 2.1
+    homogeneity_test:
+      method: "one-way ANOVA"
+      p_value: 0.45
+      result: "pass (p > 0.05)"

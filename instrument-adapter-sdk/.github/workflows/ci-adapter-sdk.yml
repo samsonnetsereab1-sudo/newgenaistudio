@@ -1,0 +1,35 @@
+name: CI - Adapter SDK Smoke Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      simulator:
+        image: ghcr.io/node:20
+        options: >-
+          --health-cmd "node -e \"console.log('simulator placeholder')\""
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+      - name: Install dependencies (root)
+        working-directory: adapter-sdk
+        run: npm ci
+      - name: Install dependencies (simulator)
+        working-directory: simulator
+        run: npm ci
+      - name: Start simulator (background)
+        working-directory: simulator
+        run: |
+          npm start & sleep 2
+      - name: Run tests
+        working-directory: adapter-sdk
+        run: npm test

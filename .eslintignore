@@ -1,0 +1,3 @@
+# Ignore broken or legacy files
+src/layout/Sidebar.jsx
+src/src/**

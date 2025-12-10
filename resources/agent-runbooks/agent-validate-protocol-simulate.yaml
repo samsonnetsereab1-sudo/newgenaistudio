@@ -1,0 +1,595 @@
+# Agent Runbook: Protocol Validation + Simulation
+# Purpose: Validate experimental protocols through simulation and safety review before execution
+# Version: 1.0.0
+# Status: Production-Ready
+# Compliance: FDA 21 CFR Part 11, Health Canada GMP, ICH Q13 (Continuous Manufacturing)
+
+metadata:
+  agent_id: "protocol-validator-v1"
+  agent_name: "Protocol Validation & Simulation Agent"
+  version: "1.0.0"
+  created: "2025-12-10T00:00:00Z"
+  owner: "NewGen Studio Platform"
+  description: |
+    Multi-stage agent that validates experimental protocols through:
+    1. Protocol parsing and feasibility analysis
+    2. Dry-run simulation with digital twin
+    3. Safety and policy review
+    4. Fidelity scoring and acceptance decision
+    
+    Human-in-the-loop required before any physical execution.
+  
+  regulatory_context:
+    - framework: "FDA 21 CFR Part 11"
+      requirement: "Electronic records and signatures for protocol approval"
+    - framework: "Health Canada GMP"
+      requirement: "Documented validation of critical processes"
+    - framework: "ICH Q13"
+      requirement: "Process understanding and control strategy validation"
+  
+  safety_principles:
+    - "Computational-only outputs (no direct instrument control)"
+    - "Policy engine blocks violations (biosafety, export control)"
+    - "Mandatory operator approval with e-signature"
+    - "Full provenance tracking (protocol version, models, decisions)"
+
+# Agent Architecture
+architecture:
+  type: "multi_stage_pipeline"
+  stages:
+    - name: "planner"
+      description: "Parse protocol YAML and create detailed task plan"
+    - name: "simulator"
+      description: "Execute dry-run simulation with digital twin"
+    - name: "safety_reviewer"
+      description: "Check policy gates and identify violations"
+    - name: "validator"
+      description: "Score simulation fidelity and make acceptance decision"
+  
+  orchestration:
+    framework: "LangGraph"
+    state_management: "persistent"
+    checkpointing: true
+    rollback_capability: true
+
+# Stage 1: Protocol Planner
+planner:
+  inputs:
+    - name: "protocol_yaml"
+      type: "yaml"
+      description: "Protocol definition (unit ops, parameters, samples)"
+      required: true
+      schema_ref: "schema-protocol-v1.yaml"
+    
+    - name: "available_resources"
+      type: "json"
+      description: "Lab resources (instruments, reagents, consumables)"
+      required: true
+    
+    - name: "user_context"
+      type: "json"
+      description: "User ID, permissions, organizational policies"
+      required: true
+  
+  processing:
+    steps:
+      - step: "parse_protocol"
+        action: "Extract unit operations, parameters, dependencies"
+        validation:
+          - "Valid YAML syntax"
+          - "Required fields present (protocol_id, steps, reagents)"
+          - "Parameter ranges within instrument specs"
+      
+      - step: "build_dependency_graph"
+        action: "Create DAG of unit operations with precedence constraints"
+        validation:
+          - "No circular dependencies"
+          - "All inputs available before use"
+      
+      - step: "resource_feasibility_check"
+        action: "Verify available instruments, reagent volumes, consumables"
+        validation:
+          - "Sufficient reagent volumes for protocol + 20% overhead"
+          - "Instruments available during scheduled time window"
+          - "Consumables (tips, plates, tubes) in stock"
+      
+      - step: "generate_task_plan"
+        action: "Create detailed execution plan with timing estimates"
+        output_schema:
+          task_plan:
+            - task_id: "string"
+              unit_operation: "string"
+              start_time_estimate: "ISO8601"
+              duration_estimate: "duration"
+              dependencies: ["task_ids"]
+              parameters: "object"
+              safety_notes: ["strings"]
+  
+  outputs:
+    - name: "task_plan"
+      type: "json"
+      description: "Detailed execution plan with timing and dependencies"
+    
+    - name: "feasibility_report"
+      type: "json"
+      description: "Resource availability, conflicts, recommendations"
+      schema:
+        feasible: "boolean"
+        conflicts: ["strings"]
+        warnings: ["strings"]
+        required_overrides: ["strings"]
+  
+  acceptance_criteria:
+    - "All required fields present in protocol"
+    - "No circular dependencies in task graph"
+    - "Resource availability ≥100% (with overhead)"
+    - "No critical policy violations flagged"
+
+# Stage 2: Simulator
+simulator:
+  inputs:
+    - name: "task_plan"
+      type: "json"
+      source: "planner.outputs.task_plan"
+    
+    - name: "digital_twin_config"
+      type: "json"
+      description: "Digital twin configuration (fermentor, sorter, etc.)"
+      required: true
+  
+  processing:
+    simulation_engine: "hybrid_mechanistic_surrogate"
+    time_step: "1_second"
+    simulation_modes:
+      - "deterministic"
+      - "monte_carlo"  # 100 runs for uncertainty quantification
+    
+    steps:
+      - step: "initialize_digital_twin"
+        action: "Load digital twin state (volumes, temperatures, cell densities)"
+        digital_twins_available:
+          - "fermentor_2L"
+          - "fermentor_50L"
+          - "cell_sorter_BD_FACSAria"
+          - "dissolution_apparatus_USP_II"
+      
+      - step: "execute_dry_run"
+        action: "Simulate each task in sequence with state propagation"
+        per_task_simulation:
+          - "Update state variables (volume, temperature, OD, pH)"
+          - "Apply mechanistic models (mass balance, heat transfer)"
+          - "Apply surrogate models (NN-based kinetics, yield predictors)"
+          - "Log telemetry (timestamps, values, uncertainties)"
+        
+        failure_injection:
+          enabled: true
+          failure_modes:
+            - "sensor_drift"
+            - "pump_malfunction"
+            - "contamination_event"
+          probability: 0.05  # 5% per task
+      
+      - step: "compare_to_expected"
+        action: "Compare simulated outcomes to protocol targets"
+        metrics:
+          - "Final biomass vs target (±10% tolerance)"
+          - "Product purity vs target (≥95%)"
+          - "Time to completion vs estimate (±20%)"
+          - "Reagent consumption vs predicted (±15%)"
+      
+      - step: "uncertainty_quantification"
+        action: "Monte Carlo analysis (100 runs) to compute confidence intervals"
+        outputs:
+          - "Mean ± 95% CI for each target variable"
+          - "Probability of meeting acceptance criteria"
+          - "Sensitivity analysis (which parameters most impact outcomes)"
+  
+  outputs:
+    - name: "simulation_results"
+      type: "json"
+      schema:
+        deterministic_run:
+          final_state: "object"
+          telemetry: ["timeseries"]
+          targets_met: "boolean"
+        
+        monte_carlo_runs:
+          n_runs: "integer"
+          success_rate: "float"  # % runs meeting acceptance
+          final_state_distribution:
+            mean: "object"
+            std: "object"
+            percentiles: [5, 25, 50, 75, 95]
+        
+        failure_scenarios:
+          - failure_mode: "string"
+            probability: "float"
+            impact: "string"
+            mitigation: "string"
+    
+    - name: "telemetry_trace"
+      type: "json"
+      description: "Time-series telemetry for visualization"
+  
+  acceptance_criteria:
+    - "Simulation converges (no NaN/Inf values)"
+    - "Monte Carlo success rate ≥90%"
+    - "All target variables within tolerance"
+    - "No critical failures without mitigation"
+
+# Stage 3: Safety Reviewer
+safety_reviewer:
+  inputs:
+    - name: "protocol_yaml"
+      source: "planner.inputs.protocol_yaml"
+    
+    - name: "task_plan"
+      source: "planner.outputs.task_plan"
+    
+    - name: "simulation_results"
+      source: "simulator.outputs.simulation_results"
+  
+  processing:
+    policy_engine: "rule_based_with_llm_fallback"
+    
+    steps:
+      - step: "biosafety_check"
+        action: "Verify BSL compliance and containment"
+        rules:
+          - rule_id: "BSL_001"
+            description: "Organism BSL matches facility rating"
+            check: "protocol.organism.bsl <= facility.bsl_rating"
+          
+          - rule_id: "BSL_002"
+            description: "PPE requirements documented"
+            check: "protocol.safety.ppe_requirements is not null"
+          
+          - rule_id: "BSL_003"
+            description: "Waste disposal plan present for BSL2+"
+            check: "protocol.organism.bsl >= 2 -> protocol.waste_disposal is not null"
+      
+      - step: "export_control_check"
+        action: "Screen for controlled organisms/materials"
+        databases:
+          - "CDC Select Agents and Toxins"
+          - "USDA Plant Protection Act"
+          - "Commerce Control List (CCL)"
+        rules:
+          - rule_id: "EXP_001"
+            description: "No select agents without authorization"
+            check: "protocol.organism NOT IN select_agent_list OR user.has_select_agent_cert"
+      
+      - step: "environmental_safety_check"
+        action: "Verify containment and emission controls"
+        rules:
+          - rule_id: "ENV_001"
+            description: "Aerosol-generating steps require HEPA filtration"
+            check: "task.generates_aerosol -> instrument.has_hepa_filter"
+          
+          - rule_id: "ENV_002"
+            description: "Volatile organic solvents require fume hood"
+            check: "reagent.is_volatile -> task.location = 'fume_hood'"
+      
+      - step: "organizational_policy_check"
+        action: "Verify institutional policies and IRB/IACUC approvals"
+        rules:
+          - rule_id: "ORG_001"
+            description: "Human-derived samples require IRB approval"
+            check: "sample.source = 'human' -> protocol.irb_approval_number is not null"
+          
+          - rule_id: "ORG_002"
+            description: "Animal-derived samples require IACUC protocol"
+            check: "sample.source = 'animal' -> protocol.iacuc_protocol_number is not null"
+      
+      - step: "simulation_safety_review"
+        action: "Identify unsafe conditions in simulation results"
+        checks:
+          - "Temperature excursions >5°C beyond limits"
+          - "Pressure spikes >10% above rated capacity"
+          - "pH deviations >1 unit from target"
+          - "Failure scenarios with >20% probability"
+  
+  outputs:
+    - name: "safety_report"
+      type: "json"
+      schema:
+        passed: "boolean"
+        violations:
+          - rule_id: "string"
+            severity: "critical | major | minor"
+            description: "string"
+            recommendation: "string"
+        
+        warnings:
+          - rule_id: "string"
+            message: "string"
+        
+        required_mitigations:
+          - mitigation_id: "string"
+            description: "string"
+            status: "required | recommended"
+  
+  acceptance_criteria:
+    - "Zero critical violations"
+    - "All major violations have documented mitigations"
+    - "Operator acknowledgment required for warnings"
+
+# Stage 4: Validator
+validator:
+  inputs:
+    - name: "task_plan"
+      source: "planner.outputs.task_plan"
+    
+    - name: "simulation_results"
+      source: "simulator.outputs.simulation_results"
+    
+    - name: "safety_report"
+      source: "safety_reviewer.outputs.safety_report"
+  
+  processing:
+    steps:
+      - step: "compute_fidelity_score"
+        action: "Assess simulation quality and reliability"
+        metrics:
+          - metric: "target_achievement_rate"
+            weight: 0.35
+            formula: "(targets_met / total_targets)"
+          
+          - metric: "monte_carlo_success_rate"
+            weight: 0.25
+            formula: "(successful_runs / total_runs)"
+          
+          - metric: "uncertainty_confidence"
+            weight: 0.20
+            formula: "1 - (mean_CI_width / mean_value)"
+          
+          - metric: "safety_score"
+            weight: 0.20
+            formula: "1 - (weighted_violations / max_violations)"
+        
+        fidelity_score_formula: "weighted_sum(metrics)"
+        fidelity_thresholds:
+          excellent: ">= 0.90"
+          good: ">= 0.75"
+          acceptable: ">= 0.60"
+          poor: "< 0.60"
+      
+      - step: "generate_recommendations"
+        action: "Provide actionable next steps"
+        recommendation_types:
+          - "parameter_adjustments"
+          - "additional_controls"
+          - "extended_monitoring"
+          - "alternative_protocols"
+      
+      - step: "make_acceptance_decision"
+        action: "Approve, conditionally approve, or reject protocol"
+        decision_logic:
+          approved:
+            conditions:
+              - "fidelity_score >= 0.75"
+              - "safety_report.passed = true"
+              - "no critical violations"
+            output: "APPROVED for execution (pending operator signature)"
+          
+          conditional_approval:
+            conditions:
+              - "0.60 <= fidelity_score < 0.75"
+              - "safety_report has warnings only"
+            output: "CONDITIONALLY APPROVED (requires mitigations + re-simulation)"
+          
+          rejected:
+            conditions:
+              - "fidelity_score < 0.60"
+              - "safety_report has critical violations"
+            output: "REJECTED (protocol revision required)"
+  
+  outputs:
+    - name: "validation_report"
+      type: "json"
+      schema:
+        decision: "approved | conditional | rejected"
+        fidelity_score: "float"
+        fidelity_breakdown:
+          target_achievement: "float"
+          monte_carlo_success: "float"
+          uncertainty_confidence: "float"
+          safety_score: "float"
+        
+        recommendations:
+          - recommendation_id: "string"
+            category: "string"
+            priority: "high | medium | low"
+            description: "string"
+        
+        next_steps:
+          - action: "string"
+            responsible: "operator | supervisor | admin"
+            deadline: "ISO8601"
+  
+  acceptance_criteria:
+    - "Fidelity score computed successfully"
+    - "Decision logic executes without errors"
+    - "Recommendations are actionable and specific"
+
+# Agent Orchestration
+orchestration:
+  execution_flow:
+    - stage: "planner"
+      on_success: "proceed to simulator"
+      on_failure: "abort with error report"
+    
+    - stage: "simulator"
+      on_success: "proceed to safety_reviewer"
+      on_failure: "abort with simulation diagnostics"
+    
+    - stage: "safety_reviewer"
+      on_success: "proceed to validator"
+      on_failure: "abort with safety violations"
+    
+    - stage: "validator"
+      on_success: "generate final report and await operator approval"
+      on_failure: "abort with validation report"
+  
+  human_in_the_loop:
+    checkpoints:
+      - stage: "after_planner"
+        action: "Review task plan before simulation"
+        required: false
+      
+      - stage: "after_validator"
+        action: "Approve/reject protocol for physical execution"
+        required: true
+        signature_required: true
+        signature_type: "FDA 21 CFR Part 11 compliant"
+  
+  logging_and_provenance:
+    log_level: "INFO"
+    log_destinations:
+      - "file:///var/log/newgen-studio/agent-runs/"
+      - "timescaledb://protocol_validation_logs"
+    
+    provenance_capture:
+      - "Protocol YAML (versioned, SHA256 hash)"
+      - "Agent version + model versions"
+      - "Task plan + simulation results + safety report + validation report"
+      - "User ID + timestamp + e-signature"
+      - "Decision rationale (human-readable explanation)"
+    
+    retention: "20 years (FDA compliance)"
+
+# Example Invocation
+example_invocation:
+  protocol_yaml: |
+    protocol_id: "PROTO-2025-001"
+    protocol_name: "E. coli BL21 Fermentation - 2L Batch"
+    version: "1.0"
+    
+    organism:
+      name: "Escherichia coli BL21(DE3)"
+      strain: "BL21"
+      bsl: 1
+    
+    steps:
+      - step_id: "inoculate"
+        unit_operation: "inoculation"
+        parameters:
+          volume_mL: 50
+          target_OD600: 0.05
+      
+      - step_id: "grow_to_induction"
+        unit_operation: "batch_growth"
+        parameters:
+          target_OD600: 0.6
+          temperature_C: 37
+          agitation_rpm: 200
+          pH_setpoint: 7.0
+      
+      - step_id: "induce"
+        unit_operation: "chemical_induction"
+        parameters:
+          reagent: "IPTG"
+          final_concentration_mM: 1.0
+      
+      - step_id: "express"
+        unit_operation: "batch_growth"
+        parameters:
+          duration_hours: 4
+          temperature_C: 30
+          agitation_rpm: 180
+      
+      - step_id: "harvest"
+        unit_operation: "centrifugation"
+        parameters:
+          speed_rcf: 5000
+          duration_min: 15
+          temperature_C: 4
+    
+    reagents:
+      - name: "LB broth"
+        volume_mL: 2000
+      - name: "IPTG"
+        concentration_mM: 1000
+        volume_uL: 2
+    
+    safety:
+      ppe_requirements:
+        - "lab coat"
+        - "nitrile gloves"
+        - "safety glasses"
+      waste_disposal: "Autoclave at 121°C for 20 min before disposal"
+  
+  expected_output:
+    decision: "approved"
+    fidelity_score: 0.87
+    recommendations:
+      - "Monitor OD600 every 30 min during growth phase"
+      - "Add feed line for extended cultivation (optional)"
+    next_steps:
+      - action: "Operator approval with e-signature"
+        responsible: "operator"
+        deadline: "2025-12-11T00:00:00Z"
+
+# Integration Points
+integration:
+  apis:
+    - name: "Protocol Submission API"
+      endpoint: "POST /api/v1/protocols/validate"
+      request_body: "protocol_yaml + user_context"
+      response: "validation_report"
+    
+    - name: "Digital Twin API"
+      endpoint: "POST /api/v1/digital-twins/{twin_id}/simulate"
+      authentication: "Bearer token"
+    
+    - name: "Policy Engine API"
+      endpoint: "POST /api/v1/policies/check"
+      request_body: "protocol_yaml + policy_rules"
+  
+  event_streaming:
+    - topic: "protocol.validation.started"
+    - topic: "protocol.validation.completed"
+    - topic: "protocol.validation.failed"
+    - topic: "protocol.approved.by.operator"
+
+# Continuous Improvement
+continuous_improvement:
+  metrics_tracking:
+    - "Average fidelity score per protocol type"
+    - "Simulation vs actual outcome accuracy (post-execution)"
+    - "Safety violation frequency by category"
+    - "Operator approval time (SLA: <4 hours)"
+  
+  model_retraining:
+    trigger: "Simulation accuracy degrades >10% from baseline"
+    frequency: "Quarterly review + ad-hoc for critical drift"
+    validation: "Shadow-mode testing before promotion"
+  
+  feedback_loop:
+    - "Collect operator feedback on recommendations"
+    - "Log actual execution outcomes vs predicted"
+    - "Retrain surrogate models with new data"
+    - "Update policy rules based on regulatory changes"
+
+# Acceptance Criteria (Agent-Level)
+acceptance_criteria:
+  functional:
+    - "All 4 stages execute successfully for valid protocol"
+    - "Fidelity score computed accurately (±5% tolerance)"
+    - "Safety report identifies all known violations"
+    - "Validation decision matches expected outcome"
+  
+  performance:
+    - "End-to-end latency <5 minutes for typical protocol"
+    - "Monte Carlo simulation (100 runs) completes <3 minutes"
+    - "Policy checks complete <10 seconds"
+  
+  reliability:
+    - "Agent availability ≥99.5%"
+    - "Zero false negatives on critical safety violations"
+    - "Provenance log completeness 100%"
+  
+  compliance:
+    - "All outputs include audit trail metadata"
+    - "E-signature capture meets 21 CFR Part 11"
+    - "20-year retention implemented for all reports"

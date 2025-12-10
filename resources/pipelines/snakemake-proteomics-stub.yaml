@@ -1,0 +1,16 @@
+id: pipeline-snakemake-proteomics-stub
+language: snakemake
+summary: "mzML → peak detect → quant → QA"
+steps:
+  - name: convert
+    tool: msconvert
+  - name: peak_detect
+    tool: openms_peakpicker
+  - name: quantify
+    tool: openms_featurefinder
+  - name: qa
+    tool: custom_qc
+sim_tests:
+  - name: smoke-proteomics
+    input: sample_mzml_small
+    expected_runtime_minutes: 7

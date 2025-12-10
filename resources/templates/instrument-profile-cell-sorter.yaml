@@ -1,0 +1,27 @@
+id: instrument-profile-cell-sorter
+title: "Cell Sorter Integration Profile"
+domain_tags: [cell-sorting, flow-cytometry, instrument, metadata]
+complexity: light
+inputs:
+  - name: instrument_id
+    type: text
+    description: "Unique identifier for the cell sorter"
+  - name: gating_strategy_json
+    type: file
+    description: "Gating parameters (JSON config)"
+  - name: collection_tubes
+    type: number
+    default: 4
+outputs:
+  - sorted_sample_metadata_csv
+  - instrument_log_json
+runtime:
+  estimated_time_minutes: 60
+  required_tools: [cell_sorter_api]
+  cost_estimate_usd: 0
+compliance_notes: "Human-in-the-loop required. No automated instrument dispatch."
+safety_notes: "This is a configuration profile only. Actual instrument operation requires manual authorization and safety checks."
+version: 1.0.0
+author: newgen-studio
+license: CC-BY-4.0
+provenance: [internal-instrument-metadata]

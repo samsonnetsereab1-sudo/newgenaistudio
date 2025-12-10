@@ -1,0 +1,242 @@
+---
+# AlphaFold Protein Feature Extraction v1
+# Integrates AlphaFold/OpenFold predictions with assay design and QC
+# Scope: Structure prediction, feature extraction, integration with assay analytics
+# Regulatory: Computational support only; no step-by-step procedural guidance
+
+metadata:
+  version: "1.0"
+  last_updated: "2025-12-10"
+  regulatory_frameworks:
+    - "FDA computational guidance (21 CFR Part 11, analytical methods)"
+  safety_principles:
+    - "Computational predictions for research guidance only"
+    - "Human-in-the-loop for assay design and QC integration"
+
+prediction_workflow:
+  step_1_sequence_input:
+    input_format: "FASTA (single or multi-protein)"
+    example: ">ProteinX\nMATSK...\n"
+    validation:
+      - "Valid amino acid code (ACDEFGHIKLMNPQRSTVWY)"
+      - "Length 21–2700 residues (AlphaFold2 limit)"
+      - "Metadata (organism, gene ID, UniProt ID optional)"
+  
+  step_2_model_selection:
+    options:
+      - name: "AlphaFold2 (DeepMind / ColabFold)"
+        source: "https://github.com/sokrypton/ColabFold"
+        mode: "Full monomer (default) or multimer (with subunit stoichiometry)"
+        msadb: "ColabFold_v1 (faster) or UNIREF30"
+        runtime_estimate_sec: "60–600 depending on length"
+      - name: "OpenFold (Meta)"
+        source: "https://github.com/aqlaboratory/openfold"
+        mode: "Monomer or multimer"
+        advantage: "Fully open-source; runs on-premises"
+      - name: "LocalColabFold"
+        mode: "Local CPU/GPU execution (no cloud upload)"
+        advantage: "Data privacy (for sensitive sequences)"
+    
+    selection_rule: "Monomer if single polypeptide; multimer if complex assembly known"
+
+  step_3_structure_prediction:
+    input: "Sequence + optional MSA"
+    process:
+      - "Evoformer network: learns residue pair representations"
+      - "Structure Module: diffusion-based refinement"
+      - "Confidence prediction: pLDDT per-residue; pAE between residues"
+    output_files:
+      - "model_final.pdb (predicted coordinates)"
+      - "plddt_b_factors.pdb (pLDDT in B-factor column for visualization)"
+      - "pae_contacts.json (pairwise aligned error matrix)"
+      - "prediction_metadata.json (model version, MSA depth, runtime)"
+    
+    confidence_metrics:
+      plddt_range: [0, 100]
+      plddt_interpretation:
+        very_high: "≥90 (confident structure, experimentally comparable)"
+        high: "70–90 (reliable fold)"
+        medium: "50–70 (correct fold, coordinate uncertainty)"
+        low: "<50 (unreliable predictions; use with caution)"
+      pae_range: "[0, 31.6 Ångströms]"
+      pae_interpretation:
+        low_pae: "<5 Å (high confidence in relative domain orientation)"
+        high_pae: ">10 Å (uncertain relative position)"
+
+step_4_feature_extraction:
+    structural_descriptors:
+      - descriptor: "Accessible Surface Area (ASA)"
+        method: "DSSP or MDAnalysis"
+        unit: "Ų (squared Angstrom)"
+        output: "Per-residue ASA + total protein ASA"
+      - descriptor: "Secondary Structure"
+        method: "DSSP assignment"
+        output: "Per-residue: H (helix), E (sheet), C (coil)"
+      - descriptor: "Hydrophobic Moment"
+        method: "Kyte-Doolittle scale"
+        window: "9 residues"
+        output: "Per-residue hydrophobicity score"
+      - descriptor: "Predicted Pockets / Druggability"
+        method: "FPocket or P2Rank"
+        output: "Pocket coordinates, volume, druggability score"
+      - descriptor: "Predicted Binding Interface (for multimers)"
+        method: "pAE thresholding + interface residue identification"
+        output: "Interface residue list + buried surface area"
+      - descriptor: "B-factor Interpretation"
+        method: "pLDDT as proxy for flexibility"
+        output: "Predicted flexible regions (low pLDDT)"
+      - descriptor: "AlphaFold Embedding (optional)"
+        method: "Extract final-layer latent representation (2560-dim vector)"
+        output: "Per-residue and protein-level embeddings"
+
+    embedding_models_optional:
+      - name: "ESM-2 (Meta)"
+        input: "Sequence"
+        output: "768–1280 dim protein-level embedding"
+        use_case: "Sequence-level feature for ML models"
+      - name: "ProtTrans"
+        input: "Sequence"
+        output: "512–1024 dim embedding"
+        use_case: "Transfer learning for property prediction"
+
+  step_5_integration_with_assay_analytics:
+    use_cases:
+      - name: "QC Model Feature Input"
+        description: "Feed ASA, secondary structure, druggability into impurity prediction model"
+        example: "High ASA residues → likely degradation hotspots"
+        output: "QC risk score + recommendations"
+      
+      - name: "Assay Design Optimization"
+        description: "Identify epitopes (high flexibility regions) for antibody binding"
+        example: "pLDDT < 60 at residues 45–55 → potential flexible loop for Ab recognition"
+        output: "Suggested epitope regions + confidence"
+      
+      - name: "Protein Purification Optimization"
+        description: "Predict protein aggregation propensity from ASA & hydrophobic moment"
+        example: "High exposed hydrophobic surface → recommend detergent or pH buffer"
+        output: "Purification parameter suggestions"
+      
+      - name: "Stability Prediction"
+        description: "Estimate Tm (melting temperature) from pLDDT distribution"
+        heuristic: "Mean pLDDT correlates with thermal stability"
+        example: "Mean pLDDT 75 → predict Tm ≈ 55°C"
+        output: "Predicted Tm + CI; recommend storage conditions"
+
+    knowledge_graph_integration:
+      storage: "Graph database (Neo4j) or RDF store"
+      nodes:
+        - "Protein (ID, sequence, length)"
+        - "AlphaFold_Model (version, pLDDT, pAE)"
+        - "Structural_Feature (ASA, flexibility, pocket)"
+        - "Assay_Design (epitope candidate, optimization parameter)"
+      edges:
+        - "protein → predicted_by → alphafold_model"
+        - "alphafold_model → has_feature → structural_feature"
+        - "structural_feature → suggests → assay_design_optimization"
+
+validation_and_acceptance:
+  model_selection:
+    - "AlphaFold2 (default) for single-chain; OpenFold for privacy-critical"
+    - "Multimer mode required for multi-subunit complexes"
+  
+  output_validation:
+    - "PDB file syntax valid (parseable by BioPython)"
+    - "All residues 1–N present in structure"
+    - "pLDDT and pAE matrices consistent"
+    - "No NaN or negative values in coordinates"
+  
+  feature_extraction_validation:
+    - "ASA calculations reproduce within 5% of reference (e.g., DSSP, FoldX)"
+    - "Secondary structure assignment consistent with visual inspection of PDB"
+    - "Pocket predictions consistent with known binding sites (if available)"
+  
+  benchmark_set:
+    proteins:
+      - "PROTEASE (PDB: 1PBF, known structure for comparison)"
+      - "T4 LYSOZYME (PDB: 1L63, standard test protein)"
+      - "MULTI-DOMAIN protein (to test relative domain positioning)"
+    acceptance_criteria:
+      - "Predicted structure RMSD < 2.0 Å vs. crystal structure (globally)"
+      - "Secondary structure matches ≥ 85%"
+      - "Pocket predictions overlap ≥ 70% with known binding sites"
+
+governance_and_versioning:
+  model_metadata:
+    alphafold_version: "v2.3.0 or openFold v1.0"
+    msadb_version: "ColabFold_v1 (dated)"
+    prediction_date: "ISO8601"
+    prediction_device: "GPU model + compute time (for reproducibility)"
+    seed_value: "Random seed (if used)"
+  
+  versioning_strategy:
+    - "Each protein → version history (if sequence updated)"
+    - "Model registry stores: sequence_hash → prediction_metadata + output files"
+    - "Retraining trigger: AlphaFold software patch; new MSA database release"
+
+audit_trail:
+  logged_artifacts:
+    - "Input FASTA + metadata (organism, gene ID)"
+    - "Prediction config (model, MSA db, mode)"
+    - "Predicted structure (PDB)"
+    - "Confidence metrics (pLDDT, pAE)"
+    - "Extracted features (CSV: residue, ASA, pLDDT, etc.)"
+    - "Integration results (assay suggestions, knowledge graph updates)"
+    - "Operator/automation ID, timestamp"
+  
+  export_formats:
+    - "PDB (structure visualization)"
+    - "JSON (full metadata + feature vectors)"
+    - "CSV (per-residue features)"
+    - "mzML / LOINC codes (for assay registry integration)"
+
+ci_smoke_tests:
+  test_prediction:
+    input: "Small protein sequence (100 residues)"
+    expected: "PDB output + pLDDT/pAE within valid ranges; runtime < 2 min"
+    timeout_seconds: 180
+  test_feature_extraction:
+    input: "Predicted PDB file"
+    expected: "ASA, DSSP, pocket coordinates calculated; CSV output valid"
+    timeout_seconds: 30
+  test_knowledge_graph_update:
+    input: "Features + protein metadata"
+    expected: "Graph nodes/edges created; queryable by protein ID"
+    timeout_seconds: 10
+
+example_output:
+  input_sequence: ">ProteinX_EcoliMutant3\nMATSKGLAALLQELQALPEQDVGALALLLRQP..."
+  
+  prediction_metadata:
+    protein_id: "ProteinX_EcoliMutant3"
+    sequence_length: 287
+    alphafold_version: "v2.3.0"
+    msa_depth: 768
+    prediction_time_minutes: 3.2
+    mean_plddt: 78.5
+    mean_pae: 8.2
+    confidence_assessment: "High (pLDDT ≥ 70 across most residues)"
+
+  extracted_features_sample:
+    residue: 45
+    amino_acid: "L"
+    asa_square_angstrom: 12.5
+    plddt: 65.3
+    secondary_structure: "C"  # coil
+    hydrophobicity: 0.89
+    notes: "Flexible loop region; potential epitope"
+
+  assay_design_suggestions:
+    - suggestion: "Epitope candidate (residues 42–52)"
+      confidence: "high"
+      reasoning: "Low pLDDT (60–68); exposed ASA; coil structure"
+      recommendation: "Design antibody phage display against this region"
+    
+    - suggestion: "Purification buffer optimization"
+      confidence: "medium"
+      reasoning: "Mean pLDDT 78; exposed hydrophobic surface area (15%)"
+      recommendation: "Consider 0.5 M NaCl + 0.1% Triton X-100 to prevent aggregation"
+    
+    - suggestion: "Predicted binding pocket"
+      confidence: "medium"
+      reasoning: "P2Rank identified pocket at residues 120–135; volume 180 Ų"
+      recommendation: "Validate by docking known inhibitors; potential for inhibitor design"

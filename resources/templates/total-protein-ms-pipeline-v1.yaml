@@ -1,0 +1,244 @@
+---
+# Total Protein MS Pipeline v1
+# Quantifies total protein via mass spectrometry (DIA/label-free)
+# Scope: MaxQuant / DIA-NN integration, quantification, QC
+# Regulatory: FDA analytical method validation, ICH Q2(R2), Health Canada GMP
+
+metadata:
+  version: "1.0"
+  last_updated: "2025-12-10"
+  regulatory_frameworks:
+    - "FDA Analytical Method Validation"
+    - "ICH Q2(R2)"
+    - "Health Canada GMP"
+
+sample_preparation:
+  input:
+    sample_type: "Cultured cells, tissue, crude extract, purified protein solution"
+    protein_concentration_estimated: "0.5–50 mg/mL"
+    sample_volume_required_ul: 50  # minimum for MS analysis
+  
+  digestion_protocol:
+    method: "Trypsin digestion (in-solution or in-gel)"
+    enzyme: "Sequencing-grade trypsin (Promega or Pierce)"
+    conditions:
+      temperature_celsius: 37
+      duration_hours: 4
+      enzyme_to_protein_ratio: "1:50"
+    verification:
+      - "Missed cleavage rate (proteomics standard) < 2%"
+      - "Peptide recovery > 80%"
+  
+  cleanup:
+    method: "SPE (C18 cartridge) or precipitation (TCA/acetone)"
+    recovery_verification: "Quantify peptide recovery by absorbance A280"
+    output_format: "Dried peptides (resuspend in 0.1% formic acid / 2% acetonitrile)"
+
+  sample_metadata:
+    sample_id: "string (e.g., 'SAMPLE-PROT-001')"
+    source_organism: "string"
+    growth_condition: "string (e.g., 'aerobic, 37°C, LB')"
+    collection_timestamp: "ISO8601"
+    extraction_timestamp: "ISO8601"
+    extraction_method: "string (lysis buffer, freeze-thaw, sonication)"
+    protein_assay_method: "string (Bradford, BCA, absorbance A280)"
+    protein_amount_total_mg: "float"
+    notes: "string"
+
+mass_spectrometry:
+  instrument: "Q-TOF, Orbitrap, or equivalent (high-resolution MS)"
+  
+  acquisition_method:
+    name: "DIA (Data-Independent Acquisition) or label-free LC-MS/MS"
+    ion_source: "ESI (Electrospray Ionization)"
+    polarity: "Positive mode"
+    mass_range_mz: [300, 1800]
+    resolution: "≥30000 (FWHM) for accurate mass"
+  
+  chromatography:
+    column: "C18 (Agilent Zorbax, Waters Symmetry, or equivalent)"
+    column_length_mm: 100
+    column_id_mm: 2.1
+    flow_rate_ul_min: 250
+    gradient: "5–50% acetonitrile in 0.1% formic acid over 60 minutes"
+    injection_volume_ul: 5  # 2.5 µg protein equivalent recommended
+  
+  data_format:
+    raw_files: ".raw (Thermo) or vendor-specific"
+    conversion: "mzML via MSConvert (proteowizard) for interoperability"
+    metadata:
+      instrument_model: "string"
+      acquisition_date: "ISO8601"
+      operator_id: "string"
+
+quantification_pipeline:
+  software_options:
+    - name: "MaxQuant"
+      version: "2.0+"
+      features: "Label-free quantification (iBAQ, LFQ), DIA support via DIA-NN wrapper"
+    - name: "DIA-NN"
+      version: "1.8+"
+      features: "DIA-specific deep learning peptide scoring"
+    - name: "Spectronaut"
+      version: "15+"
+      features: "Comprehensive DIA analysis + advanced statistics"
+  
+  workflow:
+    step_1_database_search:
+      database: "UniProt (organism-specific) or in-house FASTA"
+      enzyme_specificity: "Trypsin (KR|P)"
+      mass_tolerance:
+        precursor_ppm: 5
+        fragment_ppm: 20
+      variable_modifications:
+        - "Oxidation (M)"
+        - "Acetyl (protein N-term)"
+      fixed_modifications:
+        - "Carbamidomethyl (C)"
+      max_missed_cleavages: 2
+    
+    step_2_peptide_identification:
+      method: "Peptide spectrum matching (PSM)"
+      fdr_threshold_peptide: 0.01  # 1% FDR at peptide level
+      fdr_threshold_protein: 0.01
+      spectral_quality_filters:
+        - "Precursor mass error < 5 ppm"
+        - "Fragment ion matches ≥ 6"
+        - "Charge state 2–4 (preferred)"
+    
+    step_3_quantification:
+      method: "Label-free intensity-based (iBAQ) or LFQ"
+      normalization: "Across samples (trimmed mean of M-values or quantile)"
+      missing_value_handling: "Imputation (median per condition) or removal"
+      protein_level_aggregation: "Mean log-intensity of best 3 peptides (or top-N peptides)"
+    
+    step_4_quality_metrics:
+      output_metrics:
+        - "Peptides per protein (minimum 2)"
+        - "Spectral counts per protein"
+        - "Protein mass match (theoretical vs. inferred from peptides)"
+        - "Coverage (% amino acids detected)"
+        - "Coefficient of variation (CV) across replicates"
+      acceptance_thresholds:
+        peptides_per_protein_min: 2
+        protein_cv_percent_max: 30  # within-group variance
+        identified_proteins_min: 50  # genome minimum
+
+qc_validation:
+  checks:
+    - name: "Chromatographic peak quality"
+      rule: "Peak width 30–60 sec; symmetry 0.8–1.2; tailing < 1.5"
+      action: "Flag if not met; review raw file"
+    - name: "Mass accuracy"
+      rule: "Precursor mass error < 3 ppm; fragment < 10 ppm"
+      action: "Recalibrate instrument if systematic drift"
+    - name: "Peptide spectrum match quality"
+      rule: "MVH score > 30 (or equivalent); mascot score > 25"
+      action: "Lower FDR threshold; re-search"
+    - name: "Protein-level overlap"
+      rule: "CV(replicates) < 30% within condition; reproducible proteins > 80%"
+      action: "Flag outlier replicate; investigate sample prep"
+    - name: "Sequence uniqueness"
+      rule: "Peptide map unambiguous; protein inference correct"
+      action: "Collapse duplicate proteins; assign isoform correctly"
+
+  benchmark_dataset:
+    dataset_id: "synthetic-proteomics-20-samples.mzML"
+    composition:
+      - "E. coli lysate (3 replicates)"
+      - "Yeast lysate (3 replicates)"
+      - "Spiked standard protein mix (3 replicates)"
+    known_spike_proteins:
+      - name: "BSA"
+        quantity_ng: 500
+      - name: "Human serum albumin"
+        quantity_ng: 300
+    expected_outcomes:
+      - "Spike proteins detected with ±20% quantification error"
+      - "E. coli: 2000–3000 proteins quantified"
+      - "Yeast: 4000–5000 proteins quantified"
+
+absolute_quantification_optional:
+  method: "AQUA (Absolute Quantification using SRM) or reference standards"
+  target_proteins: "Select biologically important proteins"
+  approach:
+    - "Synthesize isotope-labeled peptides (13C/15N) for target proteins"
+    - "Measure calibration curves (1–100 fmol injected)"
+    - "Use standard peptides in complex samples"
+    - "Regression to quantify endogenous protein"
+  output: "Absolute protein concentration (µg/mL or pmol/L)"
+
+audit_trail:
+  logged_artifacts:
+    - "Raw MS data (.raw or .mzML)"
+    - "Search results (MaxQuant or DIA-NN output tables)"
+    - "Protein quantification matrix (proteins × samples)"
+    - "QC metrics (chromatography, MS accuracy, peptide statistics)"
+    - "Software version, database version, search parameters"
+    - "Operator ID, timestamp"
+  export_format:
+    - "CSV (protein ID, intensity, LFQ, coverage, annotations)"
+    - "mzTab (HUPO standard)"
+    - "JSON (full audit trail + method details)"
+
+ci_smoke_tests:
+  test_db_search:
+    input: "Small synthetic .mzML (5 MS/MS spectra)"
+    expected: "≥3 peptides matched; identifications within 1 ppm"
+    timeout_seconds: 30
+  test_quantification:
+    input: "Synthetic 3-replicate dataset + reference protein"
+    expected: "Quantification CV < 25%; spike protein recovered ±20%"
+    timeout_seconds: 60
+  test_qc_metrics:
+    input: "Quantification matrix"
+    expected: "QC metrics calculated; all proteins ≥2 peptides"
+    timeout_seconds: 10
+
+governance_and_model_registry:
+  pipeline_version:
+    software_fingerprint: "MaxQuant v2.0.3.0 + DIA-NN v1.8.1"
+    database_version: "UniProt_2025_06"
+    search_parameters_hash: "SHA256"
+  revalidation:
+    frequency: "Quarterly or when software updated"
+    benchmark_rerun: "3 benchmark samples (E. coli, yeast, spike mix)"
+    pass_criteria: "All QC metrics within historical ranges ±10%"
+
+examples:
+  sample_metadata:
+    sample_id: "SAMPLE-PROT-20251210-001"
+    source_organism: "Escherichia coli"
+    growth_condition: "Aerobic culture, 37°C, LB medium, OD600=2.0 at harvest"
+    collection_timestamp: "2025-12-10T10:00:00Z"
+    extraction_method: "Lysis buffer (pH 7.4) + 5 cycles freeze-thaw"
+    protein_assay_method: "BCA (Pierce)"
+    protein_amount_total_mg: 2.5
+
+  quantification_output:
+    protein_id: "ACAA1_ECOLI"
+    protein_name: "3-ketoacyl-CoA thiolase"
+    peptides_identified: 4
+    spectral_count: 18
+    intensity_raw: 3450000
+    intensity_lfq: 2.1e7
+    mass_monoisotopic: 41235
+    coverage_percent: 45.2
+    cv_replicates_percent: 12.5
+    qc_passed: true
+
+  qc_report:
+    analysis_id: "PROT-2025-001-ALL"
+    samples_analyzed: 9
+    proteins_quantified:
+      total: 2847
+      passed_qc: 2756
+      failed_peptide_count_min: 78
+      failed_cv_replicate_max: 13
+    chromatography:
+      median_peak_width_sec: 45
+      median_tailing_factor: 1.08
+    mass_accuracy:
+      precursor_median_error_ppm: 1.2
+      fragment_median_error_ppm: 6.8
+    status: "pass (all metrics within acceptance range)"

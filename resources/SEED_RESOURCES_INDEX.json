@@ -1,0 +1,399 @@
+{
+  "seed_resources_center_index": {
+    "version": "1.0",
+    "created": "2025-12-10T12:00:00Z",
+    "title": "NewGen Studio Advanced Capabilities - Phase 2 MVP Seed Resources",
+    "description": "Complete set of YAML/JSON templates and synthetic datasets for instrument integrations, image analytics, proteomics, and regulatory compliance",
+    "regulatory_frameworks": [
+      "FDA 21 CFR Part 11 (Electronic Records, Electronic Signatures)",
+      "FDA Analytical Method Validation Guidance",
+      "Health Canada GMP",
+      "ICH Q2(R2), Q7, Q13"
+    ]
+  },
+
+  "templates": {
+    "integration_and_instruments": [
+      {
+        "id": "cell-sorter-integration-v2",
+        "filename": "cell-sorter-integration-v2.yaml",
+        "title": "Cell Sorter Integration",
+        "description": "Secure telemetry ingestion and operator workflows for BD FACSAria, Sony SH800S, Miltenyi MACSiMACS",
+        "scope": "Adapter configuration, OPC-UA/REST gateway setup, e-signature on sort jobs, export control policy enforcement",
+        "features": [
+          "Multi-vendor support (BD, Sony, Miltenyi)",
+          "Real-time telemetry monitoring (5–10 sec polling)",
+          "Gating strategy management",
+          "Purity/recovery prediction models",
+          "Biosafety & export control gates",
+          "IQ/OQ/PQ lifecycle documentation"
+        ],
+        "acceptance_criteria": {
+          "purity_prediction_mae": "±3.5%",
+          "recovery_prediction_mae": "±5.0%"
+        },
+        "ci_smoke_tests": [
+          "test_instrument_connection",
+          "test_telemetry_schema_validation",
+          "test_gating_strategy_parsing",
+          "test_policy_enforcement"
+        ]
+      }
+    ],
+
+    "image_and_visual_analytics": [
+      {
+        "id": "viable-counts-image-pipeline-v1",
+        "filename": "viable-counts-image-pipeline-v1.yaml",
+        "title": "Viable Counts Image Pipeline",
+        "description": "Colony detection, segmentation, and CFU estimation from plate images with uncertainty quantification",
+        "scope": "U-Net segmentation, morphological feature extraction, Poisson-based uncertainty, replicate QC",
+        "features": [
+          "PNG/OME-TIFF image ingestion",
+          "Color normalization and preprocessing",
+          "U-Net segmentation (PyTorch)",
+          "Connected component analysis for counting",
+          "Bootstrap uncertainty quantification",
+          "Replicate homogeneity testing (ANOVA)",
+          "Saliency maps and morphological filtering"
+        ],
+        "acceptance_criteria": {
+          "mean_absolute_error_colonies": "≤2",
+          "median_absolute_error": "≤1",
+          "rmse": "≤3"
+        },
+        "ci_smoke_tests": [
+          "test_segmentation_model",
+          "test_cfu_calculation",
+          "test_uncertainty_quantification",
+          "test_qc_validation"
+        ]
+      },
+      {
+        "id": "gram-stain-classifier-v1",
+        "filename": "gram-stain-classifier-v1.yaml",
+        "title": "Gram Stain Classifier",
+        "description": "CNN-based classification of Gram-positive vs Gram-negative with morphological insights",
+        "scope": "EfficientNet/ResNet classifier, saliency maps, per-tile and slide-level aggregation, control validation",
+        "features": [
+          "Whole-slide image support (OME-TIFF, PNG)",
+          "Reinforhard color normalization",
+          "EfficientNet-B3 or ResNet-50 classifier",
+          "Grad-CAM saliency maps",
+          "Morphological classification (optional, secondary CNN)",
+          "Per-tile confidence scoring",
+          "Slide-level aggregation and ambiguity detection",
+          "Control slide validation (Gram-pos/neg/blank)"
+        ],
+        "acceptance_criteria": {
+          "slide_level_accuracy_percent": "≥94",
+          "gram_positive_sensitivity": "≥92%",
+          "gram_negative_sensitivity": "≥92%",
+          "auc_roc": "≥0.96",
+          "f1_score": "≥0.93"
+        },
+        "ci_smoke_tests": [
+          "test_preprocessing",
+          "test_classification",
+          "test_localization_saliency",
+          "test_control_validation"
+        ]
+      },
+      {
+        "id": "cell-lysis-detection-v1",
+        "filename": "cell-lysis-detection-v1.yaml",
+        "title": "Cell Lysis Detection",
+        "description": "Computational detection of cell lysis via imaging (membrane integrity stains) and flow cytometry",
+        "scope": "PI/7-AAD fluorescence segmentation, flow singlet gating, PI threshold classification, multi-method integration",
+        "features": [
+          "Fluorescence microscopy image processing (DAPI + PI)",
+          "Nuclear segmentation (U-Net or CCA)",
+          "Per-cell lysis classification (live/lysed/ambiguous)",
+          "Flow cytometry FSC/SSC + PI gating",
+          "Viability gate definition and optimization",
+          "Separation index calculation",
+          "Imaging + Flow data integration",
+          "Positive/negative control validation"
+        ],
+        "acceptance_criteria": {
+          "lysis_rate_mae_percent": "≤3",
+          "ci_coverage_95_percent": "≥90",
+          "negative_control_lysis_max": "≤5%",
+          "positive_control_lysis_min": "≥90%"
+        },
+        "ci_smoke_tests": [
+          "test_imaging_pipeline",
+          "test_flow_processing",
+          "test_data_integration",
+          "test_control_validation"
+        ]
+      }
+    ],
+
+    "protein_and_structural_analytics": [
+      {
+        "id": "total-protein-ms-pipeline-v1",
+        "filename": "total-protein-ms-pipeline-v1.yaml",
+        "title": "Total Protein MS Pipeline",
+        "description": "MaxQuant/DIA-NN integration for label-free protein quantification and QC",
+        "scope": "mzML ingestion, peptide identification, label-free intensity quantification, protein inference, quality metrics",
+        "features": [
+          "mzML/mzXML format support",
+          "Mascot/Sequest database search integration",
+          "1% FDR PSM filtering",
+          "Label-free intensity (iBAQ, LFQ) quantification",
+          "Cross-sample normalization (TMM, quantile)",
+          "Per-protein QC (peptide count, CV, mass match)",
+          "Optional absolute quantification (AQUA)",
+          "Chromatographic QC metrics",
+          "Mass accuracy monitoring",
+          "Protein abundance ranking"
+        ],
+        "acceptance_criteria": {
+          "peptides_per_protein_min": 2,
+          "protein_cv_percent_max": 30,
+          "identified_proteins_min": 50,
+          "mass_accuracy_ppm_max": 5
+        },
+        "ci_smoke_tests": [
+          "test_db_search",
+          "test_quantification",
+          "test_qc_metrics",
+          "test_export_formats"
+        ]
+      },
+      {
+        "id": "alphafold-protein-feature-v1",
+        "filename": "alphafold-protein-feature-v1.yaml",
+        "title": "AlphaFold Protein Feature Extraction",
+        "description": "Structure prediction and feature extraction for assay design and QC model integration",
+        "scope": "AlphaFold2/OpenFold prediction, ASA/DSSP/pocket extraction, knowledge graph integration, assay suggestions",
+        "features": [
+          "AlphaFold2 or OpenFold integration",
+          "Monomer and multimer prediction",
+          "pLDDT per-residue confidence scoring",
+          "pAE (Predicted Aligned Error) matrix",
+          "Accessible Surface Area (ASA) calculation",
+          "Secondary structure assignment (DSSP)",
+          "Binding pocket prediction (FPocket, P2Rank)",
+          "Epitope candidate identification",
+          "Protein stability prediction (Tm estimation)",
+          "ESM-2 / ProtTrans embedding (optional)",
+          "Knowledge graph storage (Neo4j, RDF)"
+        ],
+        "acceptance_criteria": {
+          "structure_rmsd_vs_crystal": "≤2.0 Å",
+          "secondary_structure_match": "≥85%",
+          "pocket_overlap_with_known": "≥70%"
+        },
+        "ci_smoke_tests": [
+          "test_prediction",
+          "test_feature_extraction",
+          "test_knowledge_graph_update",
+          "test_assay_suggestions"
+        ]
+      }
+    ],
+
+    "regulatory_and_compliance": [
+      {
+        "id": "od-biomass-model-v1",
+        "filename": "od-biomass-model-v1.yaml",
+        "title": "OD → Biomass Model",
+        "description": "OD600 telemetry ingestion, calibration, and surrogate biomass estimation with anomaly detection",
+        "scope": "Time-series ingestion, statistical & surrogate models, growth phase classification, drift detection",
+        "features": [
+          "Microplate reader telemetry ingestion",
+          "Linear (OLS) and surrogate (GP, RF) models",
+          "Strain-specific calibration",
+          "Growth phase classification (lag/exp/stationary)",
+          "Rate-of-change anomaly detection (Isolation Forest)",
+          "Exponential growth model residual analysis",
+          "Drift detection and retraining triggers",
+          "Model versioning and registry (MLflow)",
+          "95% CI prediction intervals"
+        ],
+        "acceptance_criteria": {
+          "r_squared_min": 0.90,
+          "rmse_g_per_l_max": 0.15
+        },
+        "ci_smoke_tests": [
+          "test_od_ingestion",
+          "test_model_prediction",
+          "test_anomaly_detection",
+          "test_phase_classification"
+        ]
+      },
+      {
+        "id": "bpr-template-v1",
+        "filename": "bpr-template-v1.yaml",
+        "title": "Batch Production Record (BPR) Template",
+        "description": "FDA 21 CFR Part 11 compliant BPR manifest with e-signature, audit trails, and compliance scaffolding",
+        "scope": "Batch header, unit operations, in-process testing, final product QC, release decision, deviations, export",
+        "features": [
+          "Batch metadata and responsible parties",
+          "Equipment tracking (calibration dates, status)",
+          "Unit operation parameters (planned vs actual)",
+          "In-process testing (IPT) integration",
+          "Raw materials tracking and COA verification",
+          "Intermediate and final product testing",
+          "E-signature schema (PKI, FIPS 140-2, biometric)",
+          "Intent statements per 21 CFR Part 11",
+          "Access control and audit logging",
+          "Deviation management (CAPA workflows)",
+          "Multi-format export (PDF, JSON, mzTab, XML)",
+          "20-year data retention scaffolding"
+        ],
+        "compliance_frameworks": [
+          "FDA 21 CFR Part 11",
+          "Health Canada GMP",
+          "ICH Q7",
+          "ALCOA+ data integrity"
+        ],
+        "ci_smoke_tests": [
+          "test_bpr_json_schema",
+          "test_e_signature_validation",
+          "test_export_pdf_generation",
+          "test_audit_trail_integrity"
+        ]
+      }
+    ]
+  },
+
+  "datasets": {
+    "image_analytics": [
+      {
+        "id": "synthetic-plate-images-500-samples",
+        "filename": "synthetic-plate-images-500-samples.json",
+        "title": "Synthetic Plate Images (500 samples)",
+        "description": "Procedurally generated and annotated colony images for viable counts pipeline validation",
+        "samples": 500,
+        "composition": {
+          "synthetic_generated": 400,
+          "real_anonymized": 100
+        },
+        "organisms": [
+          "Escherichia coli",
+          "Bacillus subtilis",
+          "Staphylococcus aureus",
+          "Pseudomonas aeruginosa",
+          "Candida albicans"
+        ],
+        "colony_count_range": "5–200 per image",
+        "ground_truth": "Manual consensus (2 annotators)",
+        "segmentation_masks": "Available for all",
+        "usage": "Model training, CI segmentation tests, uncertainty validation"
+      },
+      {
+        "id": "synthetic-gram-stain-slides-200-images",
+        "filename": "synthetic-gram-stain-slides-200-images.json",
+        "title": "Synthetic Gram Stain Slides (200 images)",
+        "description": "Synthetic and de-identified Gram-stain slides for CNN classifier qualification",
+        "slides": 200,
+        "composition": {
+          "gram_positive": 100,
+          "gram_negative": 100
+        },
+        "organisms": [
+          "Staphylococcus aureus",
+          "Bacillus subtilis",
+          "Escherichia coli",
+          "Pseudomonas aeruginosa",
+          "Vibrio cholerae",
+          "Spirillum species"
+        ],
+        "morphologies": ["cocci", "rods", "spiral"],
+        "control_slides": "Included (Gram-pos, Gram-neg, blank)",
+        "acceptance_criteria": "94% slide-level accuracy, AUC ≥ 0.96",
+        "usage": "CNN model training & validation, control slide benchmarking"
+      }
+    ],
+
+    "proteomics_and_biochemistry": [
+      {
+        "id": "synthetic-proteomics-20-samples-minimal-mzml",
+        "filename": "synthetic-proteomics-20-samples-minimal-mzml.json",
+        "title": "Synthetic Proteomics Samples (20 samples + miniature mzML)",
+        "description": "E. coli, yeast lysates and spiked standards with minimal mzML for CI pipeline tests",
+        "samples": 20,
+        "composition": {
+          "e_coli_lysates": 8,
+          "yeast_lysates": 8,
+          "spiked_standards": 3,
+          "organ_extracts_anonymized": 1
+        },
+        "spiked_proteins": [
+          "Bovine Serum Albumin (BSA)",
+          "Human Serum Albumin (HSA)",
+          "Equine Myoglobin"
+        ],
+        "mzml_format": "Minimal JSON representation (fast CI tests)",
+        "full_binary_files": "500 samples in resources/datasets/raw_mzml_proteomics/",
+        "expected_proteins": "1200–1800 per lysate sample",
+        "spike_recovery_expectation": "80–120%",
+        "usage": "MS database search tests, quantification validation, QC metric verification"
+      }
+    ],
+
+    "biophysical_and_timeseries": [
+      {
+        "id": "synthetic-od-timeseries-50-experiments",
+        "filename": "synthetic-od-timeseries-50-experiments.json",
+        "title": "Synthetic OD Timeseries (50 experiments)",
+        "description": "OD600 + DCW calibration curves for multiple strains and media",
+        "experiments": 50,
+        "composition": {
+          "calibration_experiments": 30,
+          "validation_experiments": 20
+        },
+        "strains": ["WT", "MUT-001", "MUT-002"],
+        "media": ["LB", "TB", "minimal_medium_A"],
+        "growth_duration": "8–36 hours",
+        "calibration_models": [
+          "Linear (OLS): biomass = a + b × OD600",
+          "Surrogate (GP/RF): multi-feature (OD, dOD/dt, temperature)"
+        ],
+        "phase_classification": "Lag → Exponential → Stationary identification",
+        "anomaly_examples": "Included (plateau, death phase, contamination patterns)",
+        "acceptance_criteria": "R² ≥ 0.90, RMSE ≤ 0.15 g/L",
+        "usage": "Model calibration, growth curve fitting, anomaly detection CI tests"
+      }
+    ]
+  },
+
+  "integration_and_next_steps": {
+    "how_to_use_templates": [
+      "1. Review template YAML for your use case (e.g., cell sorter integration)",
+      "2. Customize metadata, parameters, and thresholds for your lab environment",
+      "3. Create IQ/OQ/PQ runbooks using provided scaffolding",
+      "4. Reference acceptance criteria in your validation plans",
+      "5. Use CI smoke tests as starting points for your regression suite"
+    ],
+    "how_to_use_datasets": [
+      "1. Small datasets (plate images, gram slides) → Direct use in CI/CD",
+      "2. Proteomics mzML → Full binary files stored separately; metadata in JSON",
+      "3. OD timeseries → Import into calibration pipeline; fit models",
+      "4. Generate domain-specific fixtures by following synthetic data generation patterns"
+    ],
+    "extending_the_framework": [
+      "Templates are fully parameterized → Adapt to new instruments/protocols",
+      "Datasets include ground truth + confidence → Retrain models with your data",
+      "All smoke tests follow common pattern → Extend with domain-specific checks",
+      "YAML allows inheritance and anchors → Reduce duplication for similar workflows"
+    ]
+  },
+
+  "resource_statistics": {
+    "total_templates": 8,
+    "total_datasets": 5,
+    "total_synthetic_samples": 770,
+    "estimated_disk_space_mb": {
+      "yaml_templates": 2,
+      "json_datasets_metadata": 1,
+      "synthetic_binary_files_estimated": 2500,
+      "total_estimated_gb": 2.5
+    },
+    "creation_date": "2025-12-10",
+    "next_phase_recommendation": "Create GitHub Actions CI pipeline integrating all templates and datasets for automated validation on every commit"
+  }
+}

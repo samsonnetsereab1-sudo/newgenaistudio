@@ -1,0 +1,79 @@
+{
+  "presets": [
+    {
+      "id": "preset-small-lab",
+      "name": "Small Lab Setup",
+      "description": "Baseline configuration for a small lab with limited capacity",
+      "config": {
+        "numSamples": 5,
+        "numRuns": 3,
+        "params": {
+          "initialYield": 80,
+          "initialVolume": 40,
+          "yieldLossPerStep": 0.06
+        }
+      },
+      "tags": ["baseline", "small-lab", "cost-effective"]
+    },
+    {
+      "id": "preset-medium-lab",
+      "name": "Medium Lab Setup",
+      "description": "Configuration for a medium-sized lab with standard capacity",
+      "config": {
+        "numSamples": 20,
+        "numRuns": 5,
+        "params": {
+          "initialYield": 100,
+          "initialVolume": 50,
+          "yieldLossPerStep": 0.05
+        }
+      },
+      "tags": ["baseline", "medium-lab", "standard"]
+    },
+    {
+      "id": "preset-large-lab",
+      "name": "Large Lab Setup",
+      "description": "Configuration for a large lab with high throughput",
+      "config": {
+        "numSamples": 50,
+        "numRuns": 10,
+        "params": {
+          "initialYield": 120,
+          "initialVolume": 60,
+          "yieldLossPerStep": 0.04
+        }
+      },
+      "tags": ["baseline", "large-lab", "high-throughput"]
+    },
+    {
+      "id": "preset-high-yield-sensitivity",
+      "name": "High Yield Sensitivity Analysis",
+      "description": "Sensitivity analysis for yield loss parameters",
+      "config": {
+        "numSamples": 10,
+        "numRuns": 5,
+        "params": {
+          "initialYield": 100,
+          "initialVolume": 50,
+          "yieldLossPerStep": 0.02
+        }
+      },
+      "tags": ["sensitivity-analysis", "yield-optimization"]
+    },
+    {
+      "id": "preset-failure-scenario",
+      "name": "Failure Mode Analysis",
+      "description": "Worst-case scenario with high yield loss per step",
+      "config": {
+        "numSamples": 10,
+        "numRuns": 10,
+        "params": {
+          "initialYield": 100,
+          "initialVolume": 50,
+          "yieldLossPerStep": 0.10
+        }
+      },
+      "tags": ["failure-analysis", "worst-case", "risk-assessment"]
+    }
+  ]
+}

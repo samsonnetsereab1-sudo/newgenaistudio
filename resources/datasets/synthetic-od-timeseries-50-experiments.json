@@ -1,0 +1,259 @@
+{
+  "metadata": {
+    "dataset_id": "synthetic-od-timeseries-50-experiments",
+    "version": "1.0",
+    "created": "2025-12-10T12:00:00Z",
+    "description": "Synthetic OD600 time-series data with calibration curves for OD→biomass model validation",
+    "purpose": "CI/CD smoke testing and model qualification for OD-biomass-model-v1",
+    "regulatory_context": "FDA analytical method validation; OD calibration datasets",
+    "data_composition": {
+      "calibration_experiments": 30,
+      "validation_experiments": 20
+    }
+  },
+  "experiment_samples": [
+    {
+      "experiment_id": "od-calib-001",
+      "strain_id": "WT",
+      "medium_type": "LB",
+      "experiment_type": "calibration",
+      "inoculum_volume_ml": 50,
+      "culture_vessel": "500 mL flask with 200 mL LB",
+      "temperature_celsius": 37,
+      "aeration": "200 rpm orbital shaking",
+      "sampling_interval_minutes": 30,
+      "duration_hours": 24,
+      "replicate_number": 1,
+      "time_series": [
+        {
+          "timestamp": "2025-12-10T08:00:00Z",
+          "elapsed_hours": 0,
+          "od600_measured": 0.05,
+          "od600_cv_percent": 2.1,
+          "temperature_measured_c": 37.0,
+          "dcw_g_per_l": 0.06,
+          "dcw_cv_percent": 3.5,
+          "cell_count_million": 2.8,
+          "viability_percent": 97
+        },
+        {
+          "timestamp": "2025-12-10T08:30:00Z",
+          "elapsed_hours": 0.5,
+          "od600_measured": 0.08,
+          "od600_cv_percent": 2.3,
+          "temperature_measured_c": 37.1,
+          "dcw_g_per_l": 0.098,
+          "cell_count_million": 4.6,
+          "viability_percent": 96
+        },
+        {
+          "timestamp": "2025-12-10T09:00:00Z",
+          "elapsed_hours": 1,
+          "od600_measured": 0.12,
+          "dcw_g_per_l": 0.147,
+          "cell_count_million": 7.1,
+          "viability_percent": 96
+        },
+        {
+          "timestamp": "2025-12-10T10:00:00Z",
+          "elapsed_hours": 2,
+          "od600_measured": 0.22,
+          "dcw_g_per_l": 0.27,
+          "cell_count_million": 13.0,
+          "viability_percent": 97
+        },
+        {
+          "timestamp": "2025-12-10T12:00:00Z",
+          "elapsed_hours": 4,
+          "od600_measured": 0.75,
+          "dcw_g_per_l": 0.92,
+          "cell_count_million": 44.0,
+          "viability_percent": 97
+        },
+        {
+          "timestamp": "2025-12-10T16:00:00Z",
+          "elapsed_hours": 8,
+          "od600_measured": 1.85,
+          "dcw_g_per_l": 2.27,
+          "cell_count_million": 109,
+          "viability_percent": 96
+        },
+        {
+          "timestamp": "2025-12-10T20:00:00Z",
+          "elapsed_hours": 12,
+          "od600_measured": 2.35,
+          "dcw_g_per_l": 2.88,
+          "cell_count_million": 138,
+          "viability_percent": 95
+        },
+        {
+          "timestamp": "2025-12-11T00:00:00Z",
+          "elapsed_hours": 16,
+          "od600_measured": 2.40,
+          "dcw_g_per_l": 2.94,
+          "cell_count_million": 141,
+          "viability_percent": 94
+        }
+      ],
+      "phase_classification": {
+        "lag_phase_hours": "0–0.5",
+        "exponential_phase_hours": "0.5–8",
+        "stationary_phase_hours": "12–24"
+      },
+      "growth_parameters": {
+        "doubling_time_exponential_minutes": 38,
+        "max_growth_rate_per_hour": 1.1
+      },
+      "qc_status": "pass"
+    },
+    {
+      "experiment_id": "od-calib-002",
+      "strain_id": "WT",
+      "medium_type": "TB",
+      "experiment_type": "calibration",
+      "inoculum_volume_ml": 50,
+      "culture_vessel": "500 mL flask with 200 mL TB",
+      "temperature_celsius": 37,
+      "aeration": "200 rpm",
+      "sampling_interval_minutes": 30,
+      "duration_hours": 24,
+      "replicate_number": 2,
+      "time_series": [
+        {
+          "timestamp": "2025-12-10T08:00:00Z",
+          "elapsed_hours": 0,
+          "od600_measured": 0.06,
+          "dcw_g_per_l": 0.08,
+          "cell_count_million": 3.5
+        },
+        {
+          "timestamp": "2025-12-10T12:00:00Z",
+          "elapsed_hours": 4,
+          "od600_measured": 1.05,
+          "dcw_g_per_l": 1.35,
+          "cell_count_million": 63
+        },
+        {
+          "timestamp": "2025-12-10T20:00:00Z",
+          "elapsed_hours": 12,
+          "od600_measured": 2.85,
+          "dcw_g_per_l": 3.68,
+          "cell_count_million": 175
+        },
+        {
+          "timestamp": "2025-12-11T00:00:00Z",
+          "elapsed_hours": 16,
+          "od600_measured": 2.92,
+          "dcw_g_per_l": 3.78,
+          "cell_count_million": 180
+        }
+      ],
+      "qc_status": "pass"
+    },
+    {
+      "experiment_id": "od-calib-003",
+      "strain_id": "MUT-001",
+      "medium_type": "LB",
+      "experiment_type": "calibration",
+      "qc_status": "pass"
+    }
+  ],
+  "dataset_statistics": {
+    "total_experiments": 50,
+    "strain_distribution": {
+      "WT": 25,
+      "MUT-001": 15,
+      "MUT-002": 10
+    },
+    "medium_distribution": {
+      "LB": 30,
+      "TB": 15,
+      "minimal_medium_A": 5
+    },
+    "od600_range": {
+      "minimum": 0.05,
+      "maximum": 3.2,
+      "typical_exponential_phase": "0.1–2.0"
+    },
+    "dcw_range_g_per_l": {
+      "minimum": 0.06,
+      "maximum": 4.2
+    },
+    "duration_range_hours": {
+      "minimum": 8,
+      "maximum": 36
+    },
+    "qc_status_distribution": {
+      "pass": 48,
+      "warning": 2
+    }
+  },
+  "calibration_models_from_dataset": {
+    "linear_model_wt_lb": {
+      "strain": "WT",
+      "medium": "LB",
+      "model_form": "biomass = -0.05 + 1.23 × OD600",
+      "parameters": {
+        "intercept": -0.05,
+        "slope": 1.23,
+        "intercept_se": 0.08,
+        "slope_se": 0.05
+      },
+      "goodness_of_fit": {
+        "r_squared": 0.942,
+        "rmse_g_per_l": 0.11
+      },
+      "n_observations": 48,
+      "recommended_od_range": "0.1–2.0"
+    },
+    "linear_model_mut001_lb": {
+      "strain": "MUT-001",
+      "medium": "LB",
+      "model_form": "biomass = 0.02 + 1.18 × OD600",
+      "parameters": {
+        "intercept": 0.02,
+        "slope": 1.18
+      },
+      "goodness_of_fit": {
+        "r_squared": 0.935,
+        "rmse_g_per_l": 0.14
+      }
+    }
+  },
+  "anomaly_examples": {
+    "example_1_plateau_then_drop": {
+      "description": "OD600 plateaus then decreases (cell death phase or instrument drift)",
+      "typical_od_pattern": "2.5 → 2.5 → 2.4 → 2.1",
+      "flag": "dOD/dt becomes negative; viability may drop; investigate sample integrity"
+    }
+  },
+  "usage_for_ci_smoke_tests": {
+    "test_od_ingestion": {
+      "subset_size": 3,
+      "selection_method": "Random sample from calibration set",
+      "expected_checks": ["No NaN values", "Timestamps strictly increasing", "OD monotonic increasing"],
+      "timeout_seconds": 10
+    },
+    "test_model_prediction": {
+      "subset_size": 5,
+      "input_od_values": [0.5, 1.0, 1.5, 2.0],
+      "expected_mae_g_per_l": 0.15,
+      "timeout_seconds": 5
+    },
+    "test_phase_classification": {
+      "subset_size": 2,
+      "full_timeseries_required": true,
+      "expected_phases": ["lag", "exponential", "stationary"],
+      "timeout_seconds": 10
+    },
+    "test_anomaly_detection": {
+      "subset_size": 1,
+      "inject_synthetic_anomaly": true,
+      "expected_anomaly_flag": true,
+      "timeout_seconds": 10
+    }
+  },
+  "data_access_and_licensing": {
+    "synthetic_timeseries": "CC0 Public Domain"
+  }
+}

@@ -1,0 +1,658 @@
+# Agent Runbook: Fermentation Optimization
+# Purpose: Autonomous optimization of fermentation processes to maximize yield under constraints
+# Version: 1.0.0
+# Status: Production-Ready
+# Compliance: FDA Process Validation (Stage 2), ICH Q8/Q9/Q11 (QbD, Risk Management)
+
+metadata:
+  agent_id: "fermentation-optimizer-v1"
+  agent_name: "Fermentation Process Optimization Agent"
+  version: "1.0.0"
+  created: "2025-12-10T00:00:00Z"
+  owner: "NewGen Studio Platform"
+  description: |
+    Autonomous agent that optimizes fermentation processes through:
+    1. Multi-objective optimization (maximize yield, minimize time/cost)
+    2. Constraint satisfaction (temperature, DO, pH, safety bounds)
+    3. Bayesian optimization with surrogate models
+    4. Shadow-mode validation before live deployment
+    
+    Human approval required before applying optimized parameters to production.
+  
+  regulatory_context:
+    - framework: "FDA Process Validation"
+      stage: "Stage 2 (Process Qualification)"
+      requirement: "Demonstrate process capability and control strategy"
+    
+    - framework: "ICH Q8 (Pharmaceutical Development)"
+      requirement: "Quality by Design (QbD) approach with design space definition"
+    
+    - framework: "ICH Q9 (Quality Risk Management)"
+      requirement: "Risk assessment for process changes"
+    
+    - framework: "ICH Q11 (Development and Manufacture of Drug Substances)"
+      requirement: "Process understanding and scale-up considerations"
+  
+  safety_principles:
+    - "Shadow-mode testing required before production deployment"
+    - "All parameter changes within pre-qualified design space"
+    - "Human approval with e-signature for parameter updates"
+    - "Full audit trail of optimization iterations"
+    - "Rollback capability if process deviates"
+
+# Optimization Architecture
+architecture:
+  optimization_framework: "Bayesian Optimization"
+  surrogate_model: "Gaussian Process (GP)"
+  acquisition_function: "Expected Improvement (EI)"
+  
+  multi_objective_handling:
+    method: "Pareto frontier with weighted scalarization"
+    objectives:
+      primary:
+        - name: "biomass_yield"
+          target: "maximize"
+          weight: 0.5
+          unit: "g/L"
+        
+        - name: "product_titer"
+          target: "maximize"
+          weight: 0.4
+          unit: "g/L"
+      
+      secondary:
+        - name: "process_time"
+          target: "minimize"
+          weight: 0.05
+          unit: "hours"
+        
+        - name: "reagent_cost"
+          target: "minimize"
+          weight: 0.05
+          unit: "USD"
+  
+  constraints:
+    hard_constraints:
+      - name: "temperature"
+        bounds: [15, 42]
+        unit: "°C"
+        safety_margin: 2  # Stay 2°C away from limits
+      
+      - name: "dissolved_oxygen"
+        bounds: [10, 100]
+        unit: "% saturation"
+        critical_threshold: 15  # Alert if <15%
+      
+      - name: "pH"
+        bounds: [5.0, 9.0]
+        unit: "pH units"
+        safety_margin: 0.5
+      
+      - name: "agitation_rate"
+        bounds: [50, 1000]
+        unit: "rpm"
+        instrument_limit: 1200
+      
+      - name: "feed_rate"
+        bounds: [0, 50]
+        unit: "mL/hr"
+        pump_capacity: 60
+    
+    soft_constraints:
+      - name: "foam_formation"
+        threshold: "moderate"
+        mitigation: "Reduce agitation or add antifoam"
+      
+      - name: "power_consumption"
+        threshold: 500
+        unit: "W"
+        recommendation: "Optimize agitation profile"
+
+# Agent Workflow
+workflow:
+  stages:
+    - name: "initialization"
+      description: "Load historical data and define optimization space"
+    
+    - name: "surrogate_training"
+      description: "Train GP surrogate model on historical fermentation data"
+    
+    - name: "optimization_loop"
+      description: "Iterative search for optimal parameters"
+    
+    - name: "validation"
+      description: "Shadow-mode testing and risk assessment"
+    
+    - name: "deployment"
+      description: "Human approval and production rollout"
+
+# Stage 1: Initialization
+initialization:
+  inputs:
+    - name: "historical_fermentation_data"
+      type: "json"
+      description: "Past fermentation runs with parameters and outcomes"
+      required: true
+      schema:
+        runs:
+          - run_id: "string"
+            parameters:
+              temperature: "float"
+              do_setpoint: "float"
+              ph_setpoint: "float"
+              agitation_rpm: "float"
+              feed_rate: "float"
+            outcomes:
+              final_biomass: "float"
+              product_titer: "float"
+              process_time: "float"
+              reagent_cost: "float"
+            metadata:
+              strain: "string"
+              medium: "string"
+              scale: "string"
+    
+    - name: "process_constraints"
+      type: "json"
+      description: "Hard and soft constraints for this process"
+      source: "architecture.constraints"
+    
+    - name: "optimization_objectives"
+      type: "json"
+      description: "Target objectives with weights"
+      source: "architecture.multi_objective_handling.objectives"
+  
+  processing:
+    steps:
+      - step: "load_historical_data"
+        action: "Import and validate past fermentation runs"
+        validation:
+          - "Minimum 10 historical runs required"
+          - "All required parameters present"
+          - "Outcomes within expected ranges"
+      
+      - step: "define_design_space"
+        action: "Establish parameter ranges for optimization"
+        method: "ICH Q8 design space approach"
+        design_space:
+          - "Conservative: 50% of historical range"
+          - "Moderate: 75% of historical range"
+          - "Aggressive: 100% of historical range + 10% exploration"
+        default: "moderate"
+      
+      - step: "normalize_objectives"
+        action: "Scale objectives to 0-1 range for consistent weighting"
+        normalization:
+          - "biomass_yield: [0, historical_max * 1.2]"
+          - "product_titer: [0, historical_max * 1.2]"
+          - "process_time: [historical_min * 0.8, historical_max]"
+          - "reagent_cost: [historical_min * 0.8, historical_max]"
+  
+  outputs:
+    - name: "design_space"
+      type: "json"
+      description: "Parameter bounds for optimization"
+    
+    - name: "normalized_historical_data"
+      type: "json"
+      description: "Scaled data ready for surrogate training"
+
+# Stage 2: Surrogate Training
+surrogate_training:
+  inputs:
+    - name: "normalized_historical_data"
+      source: "initialization.outputs.normalized_historical_data"
+  
+  model_configuration:
+    model_type: "Gaussian Process Regressor"
+    kernel: "Matérn 5/2"
+    kernel_params:
+      length_scale: [1.0, 1.0, 1.0, 1.0, 1.0]
+      length_scale_bounds: [[0.1, 10.0], [0.1, 10.0], [0.1, 10.0], [0.1, 10.0], [0.1, 10.0]]
+    
+    training_strategy:
+      method: "5-fold cross-validation"
+      hyperparameter_tuning: "Grid Search"
+      n_restarts_optimizer: 10
+  
+  processing:
+    steps:
+      - step: "split_train_test"
+        action: "80/20 split for training and validation"
+      
+      - step: "train_gp_models"
+        action: "Train one GP per objective"
+        models:
+          - objective: "biomass_yield"
+            model_id: "gp_biomass"
+          - objective: "product_titer"
+            model_id: "gp_product"
+          - objective: "process_time"
+            model_id: "gp_time"
+          - objective: "reagent_cost"
+            model_id: "gp_cost"
+      
+      - step: "validate_surrogate_accuracy"
+        action: "Compute prediction accuracy on test set"
+        metrics:
+          - "R² score (target: ≥0.80)"
+          - "Mean Absolute Error (MAE)"
+          - "Root Mean Squared Error (RMSE)"
+        
+        acceptance_criteria:
+          - "R² ≥ 0.80 for primary objectives"
+          - "R² ≥ 0.70 for secondary objectives"
+          - "Prediction intervals calibrated (95% coverage)"
+  
+  outputs:
+    - name: "trained_surrogate_models"
+      type: "pickle"
+      models:
+        - "gp_biomass.pkl"
+        - "gp_product.pkl"
+        - "gp_time.pkl"
+        - "gp_cost.pkl"
+    
+    - name: "surrogate_validation_report"
+      type: "json"
+      schema:
+        model_metrics:
+          - model_id: "string"
+            r2_score: "float"
+            mae: "float"
+            rmse: "float"
+            calibration_coverage: "float"
+
+# Stage 3: Optimization Loop
+optimization_loop:
+  inputs:
+    - name: "trained_surrogate_models"
+      source: "surrogate_training.outputs.trained_surrogate_models"
+    
+    - name: "design_space"
+      source: "initialization.outputs.design_space"
+  
+  optimization_configuration:
+    algorithm: "Bayesian Optimization with Expected Improvement"
+    max_iterations: 50
+    convergence_threshold: 0.001  # Stop if improvement <0.1%
+    exploration_exploitation_tradeoff: 0.1  # xi parameter for EI
+    
+    parallel_evaluations:
+      enabled: true
+      batch_size: 5  # Evaluate 5 candidates per iteration
+      strategy: "Constant Liar (CL)"
+  
+  processing:
+    steps:
+      - step: "initialize_starting_points"
+        action: "Select initial parameter sets for evaluation"
+        method: "Latin Hypercube Sampling (LHS)"
+        n_initial_points: 10
+      
+      - step: "iterative_optimization"
+        action: "Loop until convergence or max iterations"
+        per_iteration:
+          - substep: "select_next_candidates"
+            action: "Acquisition function maximization (Expected Improvement)"
+            optimization_method: "L-BFGS-B"
+          
+          - substep: "evaluate_candidates"
+            action: "Predict outcomes using surrogate models"
+            outputs:
+              - "Predicted biomass (mean ± 2σ)"
+              - "Predicted product titer (mean ± 2σ)"
+              - "Predicted time and cost"
+          
+          - substep: "compute_scalarized_objective"
+            action: "Weighted sum of normalized objectives"
+            formula: "0.5*biomass + 0.4*product - 0.05*time - 0.05*cost"
+          
+          - substep: "check_constraints"
+            action: "Reject candidates violating hard constraints"
+            constraint_handling: "Penalty method (infinite penalty for violations)"
+          
+          - substep: "update_surrogate_models"
+            action: "Retrain GPs with new candidate evaluations"
+            incremental_training: true
+          
+          - substep: "log_iteration_results"
+            action: "Record candidates, predictions, and objective values"
+      
+      - step: "identify_optimal_parameters"
+        action: "Select parameter set with best objective value"
+        selection_criteria:
+          - "Maximum weighted objective"
+          - "High confidence (narrow prediction intervals)"
+          - "Within design space"
+          - "Pareto-optimal (if multi-objective)"
+      
+      - step: "sensitivity_analysis"
+        action: "Assess robustness of optimal parameters"
+        method: "Sobol indices"
+        outputs:
+          - "First-order sensitivity (direct effect)"
+          - "Total-order sensitivity (direct + interactions)"
+  
+  outputs:
+    - name: "optimal_parameters"
+      type: "json"
+      schema:
+        parameters:
+          temperature: "float"
+          do_setpoint: "float"
+          ph_setpoint: "float"
+          agitation_rpm: "float"
+          feed_rate: "float"
+        
+        predicted_outcomes:
+          biomass_yield:
+            mean: "float"
+            confidence_interval: [lower, upper]
+          product_titer:
+            mean: "float"
+            confidence_interval: [lower, upper]
+          process_time:
+            mean: "float"
+            confidence_interval: [lower, upper]
+          reagent_cost:
+            mean: "float"
+            confidence_interval: [lower, upper]
+        
+        sensitivity_analysis:
+          - parameter: "string"
+            first_order_index: "float"
+            total_order_index: "float"
+    
+    - name: "optimization_trace"
+      type: "json"
+      description: "All iterations with candidates and evaluations"
+    
+    - name: "pareto_frontier"
+      type: "json"
+      description: "Pareto-optimal solutions (biomass vs product tradeoff)"
+
+# Stage 4: Validation (Shadow Mode)
+validation:
+  inputs:
+    - name: "optimal_parameters"
+      source: "optimization_loop.outputs.optimal_parameters"
+    
+    - name: "digital_twin_config"
+      type: "json"
+      description: "Digital twin configuration for validation runs"
+  
+  processing:
+    steps:
+      - step: "shadow_mode_simulation"
+        action: "Run optimal parameters through digital twin"
+        simulation_runs: 100  # Monte Carlo for uncertainty
+        comparison_baseline: "current_production_parameters"
+        
+        validation_metrics:
+          - "Mean improvement in biomass yield"
+          - "Mean improvement in product titer"
+          - "Probability of meeting acceptance criteria"
+          - "Risk of constraint violations"
+      
+      - step: "risk_assessment"
+        action: "ICH Q9 risk analysis for parameter changes"
+        risk_categories:
+          - category: "Product Quality"
+            risks:
+              - "Reduced purity due to altered growth kinetics"
+              - "Increased impurities from suboptimal conditions"
+            mitigation: "QC testing on validation batches"
+          
+          - category: "Process Robustness"
+            risks:
+              - "Increased sensitivity to variability"
+              - "Narrow operating window"
+            mitigation: "Expanded in-process monitoring"
+          
+          - category: "Safety"
+            risks:
+              - "Overpressure from high agitation"
+              - "Foam-over events"
+            mitigation: "Foam sensor + automated agitation reduction"
+        
+        risk_scoring:
+          severity: [1, 2, 3, 4, 5]  # 1=negligible, 5=catastrophic
+          probability: [1, 2, 3, 4, 5]  # 1=rare, 5=frequent
+          risk_priority_number: "severity × probability"
+          acceptable_rpn: "≤10"
+      
+      - step: "compare_to_baseline"
+        action: "Statistical comparison: optimized vs current parameters"
+        tests:
+          - "Paired t-test (mean biomass yield)"
+          - "Mann-Whitney U test (median product titer)"
+          - "Variance test (process stability)"
+        
+        acceptance_criteria:
+          - "Mean yield improvement ≥10% (p<0.05)"
+          - "No significant increase in variability (F-test p>0.05)"
+          - "Zero constraint violations in 100 simulations"
+  
+  outputs:
+    - name: "validation_report"
+      type: "json"
+      schema:
+        shadow_mode_results:
+          mean_yield_improvement: "float"
+          p_value: "float"
+          constraint_violations: "integer"
+        
+        risk_assessment:
+          - risk_category: "string"
+            rpn: "integer"
+            mitigation: "string"
+            residual_risk: "low | medium | high"
+        
+        recommendation: "approve | conditional | reject"
+        conditions:
+          - "string"
+
+# Stage 5: Deployment
+deployment:
+  inputs:
+    - name: "optimal_parameters"
+      source: "optimization_loop.outputs.optimal_parameters"
+    
+    - name: "validation_report"
+      source: "validation.outputs.validation_report"
+  
+  human_approval:
+    required: true
+    approval_workflow:
+      - role: "Process Engineer"
+        action: "Review optimization results and validation report"
+        sla: "24 hours"
+      
+      - role: "QA Manager"
+        action: "Approve parameter changes for production"
+        signature_type: "FDA 21 CFR Part 11 compliant e-signature"
+        sla: "48 hours"
+      
+      - role: "Manufacturing Lead"
+        action: "Schedule validation batches"
+        sla: "72 hours"
+  
+  deployment_strategy:
+    approach: "Phased rollout with monitoring"
+    phases:
+      - phase: "Validation Batches"
+        description: "Run 3 batches with optimal parameters"
+        success_criteria:
+          - "All 3 batches meet yield targets"
+          - "QC testing passes (purity, potency, safety)"
+          - "No critical deviations"
+      
+      - phase: "Limited Production"
+        description: "Apply to 25% of production runs"
+        duration: "2 weeks"
+        monitoring:
+          - "Real-time telemetry (temperature, DO, pH)"
+          - "In-process QC (OD, biomass, product)"
+          - "Automated alerts for out-of-spec conditions"
+      
+      - phase: "Full Production"
+        description: "Roll out to 100% of runs"
+        condition: "No critical issues in limited production"
+        documentation: "Process change control record (CCR)"
+  
+  rollback_plan:
+    triggers:
+      - "Yield decrease >15% vs baseline"
+      - "QC failures >10% of batches"
+      - "Safety incidents related to parameter changes"
+    
+    rollback_procedure:
+      - "Immediate revert to previous parameters"
+      - "Investigate root cause (agent, model, external factors)"
+      - "Document deviation and corrective actions"
+      - "Re-validate before re-deployment"
+  
+  outputs:
+    - name: "deployment_plan"
+      type: "json"
+      schema:
+        approved: "boolean"
+        approval_signatures:
+          - role: "string"
+            user_id: "string"
+            timestamp: "ISO8601"
+            signature: "string"
+        
+        validation_batches:
+          - batch_id: "string"
+            scheduled_start: "ISO8601"
+            parameters: "object"
+        
+        monitoring_plan:
+          metrics: ["strings"]
+          alert_thresholds: "object"
+
+# Continuous Learning
+continuous_learning:
+  feedback_loop:
+    - step: "collect_production_data"
+      action: "Ingest actual fermentation outcomes from deployed parameters"
+      frequency: "After each batch"
+    
+    - step: "update_surrogate_models"
+      action: "Retrain GPs with new production data"
+      trigger: "Every 10 batches or monthly"
+      validation: "Compare updated model accuracy to baseline"
+    
+    - step: "refine_optimization"
+      action: "Re-run optimization with updated models"
+      frequency: "Quarterly or when model accuracy improves >5%"
+    
+    - step: "drift_detection"
+      action: "Monitor for process drift (yield degradation over time)"
+      method: "CUSUM control charts"
+      alert_threshold: "2σ deviation from target"
+  
+  model_registry:
+    versioning: "Semantic versioning (major.minor.patch)"
+    storage: "MLflow Model Registry"
+    deployment_stages:
+      - "None (development)"
+      - "Staging (shadow-mode)"
+      - "Production (active)"
+      - "Archived (deprecated)"
+
+# Example Invocation
+example_invocation:
+  scenario: "Optimize E. coli fermentation for recombinant protein production"
+  
+  historical_data_summary:
+    n_runs: 25
+    parameter_ranges:
+      temperature: [30, 37]
+      do_setpoint: [20, 60]
+      ph_setpoint: [6.5, 7.5]
+      agitation_rpm: [150, 300]
+      feed_rate: [5, 20]
+    
+    outcome_ranges:
+      biomass_yield: [8.5, 15.2]
+      product_titer: [0.8, 2.5]
+      process_time: [18, 28]
+      reagent_cost: [120, 280]
+  
+  optimization_results:
+    optimal_parameters:
+      temperature: 33.5
+      do_setpoint: 45
+      ph_setpoint: 7.1
+      agitation_rpm: 225
+      feed_rate: 12
+    
+    predicted_outcomes:
+      biomass_yield: 16.8  # +10% vs best historical
+      product_titer: 2.9   # +16% vs best historical
+      process_time: 22     # -3 hrs vs median
+      reagent_cost: 195    # -15% vs median
+    
+    validation_results:
+      shadow_mode_success_rate: 0.95
+      mean_yield_improvement: 0.12
+      p_value: 0.003
+      constraint_violations: 0
+    
+    recommendation: "APPROVED for validation batches"
+
+# Integration Points
+integration:
+  data_sources:
+    - name: "Fermentation Database"
+      type: "PostgreSQL"
+      tables: ["fermentation_runs", "process_parameters", "outcomes"]
+    
+    - name: "Digital Twin API"
+      endpoint: "POST /api/v1/digital-twins/fermentor-2L/simulate"
+    
+    - name: "MES (Manufacturing Execution System)"
+      protocol: "OPC-UA"
+      nodes: ["Temperature", "DissolvedOxygen", "pH", "AgitationRPM"]
+  
+  outputs:
+    - name: "Optimization Results API"
+      endpoint: "GET /api/v1/optimizations/{optimization_id}"
+    
+    - name: "Parameter Update API"
+      endpoint: "PATCH /api/v1/process-parameters/{process_id}"
+      authentication: "e-signature required"
+  
+  event_streaming:
+    topics:
+      - "optimization.started"
+      - "optimization.completed"
+      - "validation.passed"
+      - "deployment.approved"
+      - "rollback.triggered"
+
+# Acceptance Criteria (Agent-Level)
+acceptance_criteria:
+  functional:
+    - "Surrogate models achieve R² ≥0.80 on validation set"
+    - "Optimization converges within 50 iterations"
+    - "Optimal parameters within design space"
+    - "Shadow-mode validation detects constraint violations"
+  
+  performance:
+    - "Optimization completes <30 minutes for 50 iterations"
+    - "Surrogate training <5 minutes for 25 historical runs"
+    - "Shadow-mode simulation (100 runs) <10 minutes"
+  
+  safety:
+    - "Zero constraint violations in production deployment"
+    - "Rollback triggered correctly for out-of-spec conditions"
+    - "All parameter changes approved with e-signature"
+  
+  business_value:
+    - "Mean yield improvement ≥10% vs baseline"
+    - "ROI positive within 6 months (reduced reagent costs + increased throughput)"
+    - "Process variability reduced or maintained (not increased)"

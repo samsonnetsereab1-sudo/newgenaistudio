@@ -1,0 +1,30 @@
+id: template-protein-expression-purification-v1
+title: "Protein Expression & Purification (E. coli)"
+domain_tags: [protein, expression, purification, biologics]
+complexity: light
+inputs:
+  - name: construct_fasta
+    type: file
+  - name: expression_strain
+    type: select
+    options: [BL21, Rosetta]
+  - name: tag
+    type: select
+    options: [His, GST, FLAG]
+outputs:
+  - expression_qc_csv
+  - purification_report_pdf
+runtime:
+  estimated_time_minutes: 360
+  required_tools: [shaker_incubator, chromatography_system]
+  cost_estimate_usd: 320
+sim_tests:
+  - name: throughput-sim
+    samples: 24
+    expected_recovery_mg: 3
+    allowed_failure_rate_pct: 8
+compliance_notes: "Review buffer compositions for regulated substances"
+version: 1.0.0
+author: newgen-studio
+license: CC-BY-4.0
+provenance: ["internal template seed"]

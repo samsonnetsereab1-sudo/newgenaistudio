@@ -1,0 +1,32 @@
+id: pipeline-alphafold-structure-prediction
+title: "AlphaFold Structure Prediction Pipeline"
+domain_tags: [structure-prediction, alphafold, computational, protein]
+complexity: power
+inputs:
+  - name: sequence_fasta
+    type: file
+    description: "Protein sequence in FASTA format"
+  - name: model_preset
+    type: select
+    options: [monomer, multimer]
+    default: monomer
+  - name: num_recycles
+    type: number
+    default: 3
+outputs:
+  - predicted_structure_pdb
+  - confidence_json
+  - alignment_results
+runtime:
+  estimated_time_minutes: 120
+  required_tools: [alphafold, gpu_node]
+  cost_estimate_usd: 5
+sim_tests:
+  - name: smoke-monomer
+    input: sample_sequence_small.fasta
+    expected_runtime_minutes: 10
+compliance_notes: "Computational only. No lab hardware involved."
+version: 1.0.0
+author: newgen-studio
+license: Apache-2.0
+provenance: [alphafold-community]

@@ -1,0 +1,137 @@
+{
+  "metadata": {
+    "dataset_id": "synthetic-gram-stain-slides-200-images",
+    "version": "1.0",
+    "created": "2025-12-10T12:00:00Z",
+    "description": "Synthetic and annotated Gram stain slide images for CNN classifier validation",
+    "purpose": "Model qualification benchmarking for Gram-stain classifier (gram-stain-classifier-v1)",
+    "regulatory_context": "FDA analytical method validation",
+    "composition": {
+      "gram_positive_slides": 100,
+      "gram_negative_slides": 100
+    }
+  },
+  "slide_samples": [
+    {
+      "slide_id": "gram-synthetic-gpos-001",
+      "slide_type": "synthetic_generated",
+      "organism": "Staphylococcus aureus",
+      "gram_type": "Gram-positive",
+      "morphology": "cocci",
+      "image_specs": {
+        "resolution_dpi": 600,
+        "format": "OME-TIFF",
+        "bit_depth": "24-bit RGB",
+        "magnification": 100,
+        "channels": ["DAPI (blue)", "Gram stain (purple/pink)"]
+      },
+      "tiles_generated": 42,
+      "annotation_method": "Automated synthetic generation + manual verification",
+      "ground_truth_gram_type": "Gram-positive",
+      "expected_model_confidence": 0.95,
+      "notes": "Clear purple staining; typical cocci morphology"
+    },
+    {
+      "slide_id": "gram-synthetic-gneg-001",
+      "slide_type": "synthetic_generated",
+      "organism": "Escherichia coli",
+      "gram_type": "Gram-negative",
+      "morphology": "rods",
+      "ground_truth_gram_type": "Gram-negative",
+      "expected_model_confidence": 0.93,
+      "notes": "Clear pink/red staining; rod morphology"
+    },
+    {
+      "slide_id": "gram-real-annotated-001",
+      "slide_type": "real_anonymized",
+      "organism": "Bacillus subtilis",
+      "gram_type": "Gram-positive",
+      "morphology": "rods",
+      "source": "Archived laboratory slide (de-identified)",
+      "ground_truth_gram_type": "Gram-positive",
+      "annotation_consensus": true,
+      "annotator_count": 2,
+      "image_quality": "good (minor dust, clear staining)",
+      "tiles_analyzed": 36,
+      "high_confidence_tiles_percent": 89
+    },
+    {
+      "slide_id": "gram-real-annotated-002",
+      "slide_type": "real_anonymized",
+      "organism": "Pseudomonas aeruginosa",
+      "gram_type": "Gram-negative",
+      "morphology": "rods",
+      "ground_truth_gram_type": "Gram-negative",
+      "image_quality": "excellent",
+      "high_confidence_tiles_percent": 95
+    }
+  ],
+  "dataset_statistics": {
+    "total_slides": 200,
+    "gram_type_distribution": {
+      "Gram-positive": 100,
+      "Gram-negative": 100
+    },
+    "morphology_distribution": {
+      "cocci": 80,
+      "rods": 100,
+      "spiral": 20
+    },
+    "organism_distribution": {
+      "Staphylococcus aureus": 40,
+      "Bacillus subtilis": 30,
+      "Escherichia coli": 45,
+      "Pseudomonas aeruginosa": 35,
+      "Vibrio cholerae": 15,
+      "Spirillum species": 20
+    },
+    "image_quality_distribution": {
+      "excellent": 140,
+      "good": 50,
+      "fair": 10
+    },
+    "tiles_per_slide_range": {
+      "minimum": 30,
+      "maximum": 50,
+      "mean": 42
+    }
+  },
+  "benchmark_set_composition": {
+    "test_set_slides": 50,
+    "test_set_selection": "Stratified random sampling (25 Gram-pos, 25 Gram-neg)",
+    "gram_positive_morphologies": ["cocci (S. aureus)", "rods (B. subtilis)", "rods (L. monocytogenes)"],
+    "gram_negative_morphologies": ["rods (E. coli)", "rods (P. aeruginosa)", "spiral (V. cholerae)"]
+  },
+  "acceptance_criteria_for_ci_tests": {
+    "slide_level_accuracy_percent_min": 94,
+    "gram_positive_sensitivity_percent_min": 92,
+    "gram_negative_sensitivity_percent_min": 92,
+    "specificity_percent_min": 94,
+    "auc_roc_min": 0.96,
+    "f1_score_min": 0.93,
+    "tile_level_high_confidence_percent_min": 85
+  },
+  "control_slides_included": {
+    "positive_control_gram_positive": {
+      "slide_id": "control-gpos-001",
+      "organism": "Staphylococcus aureus",
+      "expected_classification": "Gram-positive",
+      "expected_confidence_min": 0.95
+    },
+    "positive_control_gram_negative": {
+      "slide_id": "control-gneg-001",
+      "organism": "Escherichia coli",
+      "expected_classification": "Gram-negative",
+      "expected_confidence_min": 0.95
+    },
+    "negative_control_unstained": {
+      "slide_id": "control-blank-001",
+      "description": "Unstained slide (no cells)",
+      "expected_outcome": "Ambiguous or rejection"
+    }
+  },
+  "data_access_and_licensing": {
+    "synthetic_slides": "CC0 Public Domain",
+    "real_annotated_slides": "Restricted: Internal use only; de-identified per HIPAA/GDPR"
+  }
+}

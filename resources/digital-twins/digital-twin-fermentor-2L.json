@@ -1,0 +1,553 @@
+{
+  "digital_twin_id": "fermentor-2L-v1",
+  "digital_twin_name": "2-Liter Bioreactor Digital Twin",
+  "version": "1.0.0",
+  "created": "2025-12-10T00:00:00Z",
+  "description": "Hybrid mechanistic + surrogate digital twin for 2L bench-scale fermentor validation and operator training",
+  
+  "physical_asset": {
+    "manufacturer": "Sartorius",
+    "model": "BIOSTAT B-DCU",
+    "serial_number": "B2L-001",
+    "capacity": {
+      "volume_min_L": 0.5,
+      "volume_max_L": 2.0,
+      "volume_working_L": 1.5
+    },
+    "instrumentation": {
+      "temperature": {
+        "sensor_type": "Pt100 RTD",
+        "range_C": [4, 60],
+        "accuracy": "±0.1°C"
+      },
+      "ph": {
+        "sensor_type": "InPro 4260i/SG",
+        "range": [2, 12],
+        "accuracy": "±0.02 pH"
+      },
+      "dissolved_oxygen": {
+        "sensor_type": "VisiFerm DO ECS",
+        "range_percent": [0, 200],
+        "accuracy": "±1% saturation"
+      },
+      "agitation": {
+        "impeller_type": "Rushton turbine",
+        "rpm_range": [50, 1200],
+        "motor_power_W": 50
+      },
+      "aeration": {
+        "sparger_type": "ring",
+        "flow_range_LPM": [0.1, 10],
+        "gas_mix": ["air", "O2", "N2"]
+      },
+      "pumps": {
+        "feed": {
+          "type": "peristaltic",
+          "flow_range_mL_hr": [0, 100]
+        },
+        "base": {
+          "type": "peristaltic",
+          "flow_range_mL_hr": [0, 50]
+        },
+        "acid": {
+          "type": "peristaltic",
+          "flow_range_mL_hr": [0, 50]
+        }
+      }
+    },
+    "location": {
+      "facility": "NewGen Studio Lab",
+      "building": "Bioprocessing Wing",
+      "room": "BP-101",
+      "coordinates": [37.7749, -122.4194]
+    }
+  },
+  
+  "state_variables": {
+    "volume_L": {
+      "initial_value": 1.5,
+      "unit": "liters",
+      "constraints": {
+        "min": 0.5,
+        "max": 2.0
+      },
+      "update_equation": "dV/dt = feed_rate - harvest_rate - evaporation_rate"
+    },
+    "temperature_C": {
+      "initial_value": 37.0,
+      "unit": "°C",
+      "constraints": {
+        "min": 15,
+        "max": 45,
+        "safety_margin": 2
+      },
+      "update_equation": "dT/dt = (Q_heating - Q_cooling - Q_metabolic) / (m * Cp)"
+    },
+    "pH": {
+      "initial_value": 7.0,
+      "unit": "pH units",
+      "constraints": {
+        "min": 5.5,
+        "max": 8.5
+      },
+      "update_equation": "dpH/dt = f(acid_rate, base_rate, metabolic_acids, buffer_capacity)"
+    },
+    "dissolved_oxygen_percent": {
+      "initial_value": 50,
+      "unit": "% saturation",
+      "constraints": {
+        "min": 10,
+        "critical_threshold": 15
+      },
+      "update_equation": "dDO/dt = k_La * (DO_sat - DO) - OUR"
+    },
+    "biomass_concentration_g_L": {
+      "initial_value": 0.05,
+      "unit": "g/L",
+      "constraints": {
+        "min": 0,
+        "max": 50
+      },
+      "update_equation": "dX/dt = mu * X - (D * X)"
+    },
+    "substrate_concentration_g_L": {
+      "initial_value": 20.0,
+      "unit": "g/L (glucose)",
+      "constraints": {
+        "min": 0
+      },
+      "update_equation": "dS/dt = -(mu * X / Y_xs) + (D * S_feed - D * S)"
+    },
+    "product_concentration_g_L": {
+      "initial_value": 0.0,
+      "unit": "g/L",
+      "constraints": {
+        "min": 0
+      },
+      "update_equation": "dP/dt = q_p * X - (D * P)"
+    },
+    "agitation_rpm": {
+      "initial_value": 200,
+      "unit": "rpm",
+      "constraints": {
+        "min": 50,
+        "max": 1000
+      },
+      "control_type": "setpoint"
+    },
+    "aeration_rate_vvm": {
+      "initial_value": 1.0,
+      "unit": "vvm (volumes per volume per minute)",
+      "constraints": {
+        "min": 0.1,
+        "max": 5.0
+      },
+      "control_type": "setpoint"
+    }
+  },
+  
+  "mechanistic_models": {
+    "growth_kinetics": {
+      "model_type": "Monod with substrate inhibition",
+      "equations": {
+        "specific_growth_rate": "mu = mu_max * (S / (K_s + S + S^2/K_i))",
+        "substrate_uptake": "q_s = (mu / Y_xs) + m_s",
+        "product_formation": "q_p = alpha * mu + beta",
+        "oxygen_uptake_rate": "OUR = q_o * X"
+      },
+      "parameters": {
+        "mu_max": {
+          "value": 0.6,
+          "unit": "hr^-1",
+          "description": "Maximum specific growth rate"
+        },
+        "K_s": {
+          "value": 0.1,
+          "unit": "g/L",
+          "description": "Monod constant"
+        },
+        "K_i": {
+          "value": 100,
+          "unit": "g/L",
+          "description": "Substrate inhibition constant"
+        },
+        "Y_xs": {
+          "value": 0.5,
+          "unit": "g biomass / g substrate",
+          "description": "Biomass yield on substrate"
+        },
+        "m_s": {
+          "value": 0.02,
+          "unit": "g substrate / g biomass / hr",
+          "description": "Maintenance coefficient"
+        },
+        "alpha": {
+          "value": 0.1,
+          "unit": "g product / g biomass",
+          "description": "Growth-associated product formation"
+        },
+        "beta": {
+          "value": 0.005,
+          "unit": "g product / g biomass / hr",
+          "description": "Non-growth-associated product formation"
+        },
+        "q_o": {
+          "value": 0.2,
+          "unit": "g O2 / g biomass / hr",
+          "description": "Specific oxygen uptake rate"
+        }
+      },
+      "calibration_data_source": "historical_fermentation_runs.json"
+    },
+    
+    "mass_transfer": {
+      "model_type": "k_La correlation",
+      "equations": {
+        "k_La": "k_La = 0.002 * (P/V)^0.7 * v_s^0.3",
+        "power_per_volume": "P/V = Np * rho * N^3 * D^5 / V",
+        "superficial_gas_velocity": "v_s = Q_gas / A_cross_section"
+      },
+      "parameters": {
+        "Np": {
+          "value": 5.0,
+          "unit": "dimensionless",
+          "description": "Power number for Rushton turbine"
+        },
+        "rho": {
+          "value": 1000,
+          "unit": "kg/m^3",
+          "description": "Density of culture medium"
+        },
+        "D": {
+          "value": 0.06,
+          "unit": "m",
+          "description": "Impeller diameter"
+        }
+      }
+    },
+    
+    "heat_transfer": {
+      "model_type": "Energy balance",
+      "equations": {
+        "heat_generation_metabolic": "Q_metabolic = -delta_H_glucose * q_s * X * V",
+        "heat_generation_agitation": "Q_agitation = P_agitation",
+        "heat_removal_jacket": "Q_jacket = UA * (T_jacket - T_broth)"
+      },
+      "parameters": {
+        "delta_H_glucose": {
+          "value": -2800,
+          "unit": "kJ/mol",
+          "description": "Heat of combustion for glucose"
+        },
+        "UA": {
+          "value": 50,
+          "unit": "W/K",
+          "description": "Overall heat transfer coefficient × area"
+        },
+        "Cp": {
+          "value": 4180,
+          "unit": "J/kg/K",
+          "description": "Specific heat capacity"
+        }
+      }
+    }
+  },
+  
+  "surrogate_models": {
+    "biomass_predictor": {
+      "model_type": "Neural Network (3-layer MLP)",
+      "framework": "PyTorch",
+      "input_features": [
+        "time_hours",
+        "temperature_C",
+        "pH",
+        "dissolved_oxygen_percent",
+        "agitation_rpm",
+        "feed_rate_mL_hr"
+      ],
+      "output_target": "biomass_concentration_g_L",
+      "architecture": {
+        "layers": [
+          {"type": "Linear", "in_features": 6, "out_features": 32},
+          {"type": "ReLU"},
+          {"type": "Dropout", "p": 0.2},
+          {"type": "Linear", "in_features": 32, "out_features": 16},
+          {"type": "ReLU"},
+          {"type": "Linear", "in_features": 16, "out_features": 1}
+        ]
+      },
+      "training": {
+        "loss_function": "MSE",
+        "optimizer": "Adam",
+        "learning_rate": 0.001,
+        "epochs": 200,
+        "validation_r2": 0.92
+      },
+      "model_file": "models/biomass_predictor_v1.pth",
+      "uncertainty": "Monte Carlo Dropout (100 forward passes)"
+    },
+    
+    "product_titer_predictor": {
+      "model_type": "Gaussian Process Regressor",
+      "framework": "scikit-learn (GPyTorch)",
+      "input_features": [
+        "time_hours",
+        "biomass_concentration_g_L",
+        "substrate_concentration_g_L",
+        "temperature_C"
+      ],
+      "output_target": "product_concentration_g_L",
+      "kernel": "Matérn 5/2",
+      "training": {
+        "validation_r2": 0.88,
+        "calibration_coverage": 0.94
+      },
+      "model_file": "models/product_titer_gp_v1.pkl"
+    }
+  },
+  
+  "unit_operations": {
+    "inoculation": {
+      "description": "Transfer seed culture to fermentor",
+      "parameters": {
+        "inoculum_volume_mL": {
+          "default": 50,
+          "range": [10, 200]
+        },
+        "target_OD600": {
+          "default": 0.05,
+          "range": [0.01, 0.1]
+        }
+      },
+      "simulation_action": "Set initial biomass based on inoculum OD and volume"
+    },
+    
+    "batch_growth": {
+      "description": "Uncontrolled batch fermentation phase",
+      "parameters": {
+        "duration_hours": {
+          "default": 8,
+          "range": [1, 48]
+        },
+        "temperature_C": {
+          "default": 37,
+          "range": [20, 42]
+        },
+        "agitation_rpm": {
+          "default": 200,
+          "range": [100, 800]
+        },
+        "aeration_vvm": {
+          "default": 1.0,
+          "range": [0.5, 3.0]
+        }
+      },
+      "simulation_action": "Integrate ODEs for batch growth with Monod kinetics"
+    },
+    
+    "fed_batch": {
+      "description": "Fed-batch fermentation with substrate feeding",
+      "parameters": {
+        "feed_rate_mL_hr": {
+          "default": 10,
+          "range": [1, 50]
+        },
+        "feed_substrate_concentration_g_L": {
+          "default": 500,
+          "range": [100, 800]
+        },
+        "duration_hours": {
+          "default": 12,
+          "range": [4, 72]
+        }
+      },
+      "simulation_action": "Integrate ODEs with time-varying feed rate"
+    },
+    
+    "induction": {
+      "description": "Chemical induction for recombinant protein expression",
+      "parameters": {
+        "inducer": {
+          "default": "IPTG",
+          "options": ["IPTG", "arabinose", "rhamnose"]
+        },
+        "concentration_mM": {
+          "default": 1.0,
+          "range": [0.1, 5.0]
+        }
+      },
+      "simulation_action": "Modify product formation parameters (alpha, beta) post-induction"
+    },
+    
+    "harvest": {
+      "description": "Harvest culture by centrifugation or filtration",
+      "parameters": {
+        "method": {
+          "default": "centrifugation",
+          "options": ["centrifugation", "tangential_flow_filtration"]
+        },
+        "recovery_efficiency": {
+          "default": 0.95,
+          "range": [0.85, 0.99]
+        }
+      },
+      "simulation_action": "Calculate final biomass and product yields"
+    }
+  },
+  
+  "control_strategies": {
+    "temperature_control": {
+      "controller_type": "PID",
+      "setpoint_C": 37.0,
+      "gains": {
+        "Kp": 5.0,
+        "Ki": 0.5,
+        "Kd": 1.0
+      },
+      "actuators": ["heating_jacket", "cooling_jacket"]
+    },
+    
+    "ph_control": {
+      "controller_type": "On-Off with deadband",
+      "setpoint": 7.0,
+      "deadband": 0.1,
+      "actuators": {
+        "acid": "1M HCl",
+        "base": "2M NaOH"
+      }
+    },
+    
+    "do_control": {
+      "controller_type": "Cascade (aeration → agitation)",
+      "setpoint_percent": 30,
+      "cascade_logic": [
+        "If DO < setpoint: increase aeration (0.1-5 vvm)",
+        "If aeration maxed: increase agitation (200-800 rpm)",
+        "If agitation maxed: supplement with O2"
+      ]
+    }
+  },
+  
+  "simulation_configuration": {
+    "solver": "scipy.integrate.solve_ivp",
+    "method": "LSODA",
+    "time_step_seconds": 1,
+    "tolerance": {
+      "rtol": 1e-6,
+      "atol": 1e-9
+    },
+    "output_sampling_interval_minutes": 5,
+    "enable_noise": true,
+    "noise_parameters": {
+      "temperature_std": 0.1,
+      "pH_std": 0.05,
+      "DO_std": 1.0,
+      "biomass_measurement_error": 0.05
+    }
+  },
+  
+  "shadow_mode": {
+    "enabled": true,
+    "description": "Run digital twin in parallel with physical fermentor for calibration",
+    "sync_interval_minutes": 5,
+    "telemetry_source": "opc_ua://fermentor-2L-001",
+    "state_correction": {
+      "method": "Kalman filter",
+      "correction_gain": 0.3
+    },
+    "divergence_alert": {
+      "threshold_biomass": 0.15,
+      "threshold_temperature": 1.0,
+      "threshold_pH": 0.2,
+      "action": "Alert operator + log for model retraining"
+    }
+  },
+  
+  "validation": {
+    "qualification_status": "OQ (Operational Qualification)",
+    "validation_protocol": "VP-2025-TWIN-001",
+    "test_scenarios": [
+      {
+        "test_id": "OQ-001",
+        "description": "Batch growth E. coli BL21",
+        "acceptance_criteria": "Final biomass ±10% of physical run"
+      },
+      {
+        "test_id": "OQ-002",
+        "description": "Fed-batch with exponential feeding",
+        "acceptance_criteria": "Product titer ±15% of physical run"
+      },
+      {
+        "test_id": "OQ-003",
+        "description": "DO control response to disturbance",
+        "acceptance_criteria": "Recovery time ±20% of physical"
+      }
+    ],
+    "fidelity_metrics": {
+      "biomass_R2": 0.90,
+      "product_R2": 0.85,
+      "temperature_RMSE": 0.3,
+      "pH_RMSE": 0.08,
+      "DO_RMSE": 2.5
+    }
+  },
+  
+  "use_cases": {
+    "operator_training": {
+      "description": "Interactive simulator for operator training on batch setup, control, and troubleshooting",
+      "features": [
+        "3D visualization of fermentor state",
+        "Inject failures (pump malfunction, sensor drift)",
+        "Score operator responses"
+      ]
+    },
+    
+    "protocol_validation": {
+      "description": "Dry-run validation before physical execution",
+      "integration": "agent-validate-protocol-simulate.yaml"
+    },
+    
+    "process_optimization": {
+      "description": "Search for optimal parameters using surrogate models",
+      "integration": "agent-optimize-fermentation.yaml"
+    },
+    
+    "scale_up_prediction": {
+      "description": "Predict performance at larger scales (50L, 500L)",
+      "method": "Dimensional analysis + mechanistic scaling laws"
+    }
+  },
+  
+  "data_logging": {
+    "telemetry_database": "timescaledb://digital_twin_telemetry",
+    "state_snapshots": "s3://newgen-studio/digital-twins/fermentor-2L/snapshots/",
+    "retention_policy": "7 days real-time, 1 year aggregated, 20 years snapshots",
+    "export_formats": ["JSON", "CSV", "HDF5"]
+  },
+  
+  "regulatory_compliance": {
+    "frameworks": [
+      "FDA Process Validation (Stage 1 - Process Design)",
+      "ICH Q8 (Design Space Definition)",
+      "GAMP 5 (Software Validation - Category 4)"
+    ],
+    "documentation": {
+      "user_requirements": "URS-TWIN-001",
+      "functional_specification": "FS-TWIN-001",
+      "design_specification": "DS-TWIN-001",
+      "validation_protocol": "VP-TWIN-001",
+      "validation_report": "VR-TWIN-001"
+    },
+    "change_control": "All model updates require CCR (Change Control Record)"
+  },
+  
+  "future_enhancements": {
+    "planned_features": [
+      "Real-time parameter estimation (adaptive models)",
+      "Multi-scale integration (upstream + downstream)",
+      "Integration with MES for closed-loop control",
+      "Digital twin for continuous manufacturing",
+      "VR/AR interface for immersive operator training"
+    ]
+  }
+}

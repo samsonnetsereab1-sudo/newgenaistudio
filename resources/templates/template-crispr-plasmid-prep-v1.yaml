@@ -1,0 +1,30 @@
+id: template-crispr-plasmid-prep-v1
+title: "CRISPR Plasmid Prep (E. coli)"
+domain_tags: [plasmid, CRISPR, expression, biologics]
+complexity: light
+inputs:
+  - name: target_sequence_fasta
+    type: file
+  - name: host_strain
+    type: select
+    options: [DH5a, BL21]
+  - name: containment_level
+    type: select
+    options: [BSL-1, BSL-2]
+outputs:
+  - plasmid_map_svg
+  - qc_report_pdf
+runtime:
+  estimated_time_minutes: 240
+  required_tools: [pipettes, thermocycler]
+  cost_estimate_usd: 150
+sim_tests:
+  - name: run-smoke-sim
+    samples: 10
+    expected_yield_ng: 500
+    allowed_failure_rate_pct: 5
+compliance_notes: "Human-in-the-loop required for lab execution"
+version: 1.0.0
+author: newgen-studio
+license: CC-BY-4.0
+provenance: ["internal template seed"]

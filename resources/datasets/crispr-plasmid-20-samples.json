@@ -1,0 +1,1357 @@
+{
+  "metadata": {
+    "datasetId": "crispr-plasmid-20-samples",
+    "description": "Synthetic CRISPR plasmid preparation dataset for validation and testing",
+    "protocol": "plasmid-prep",
+    "organism": "Escherichia coli",
+    "numSamples": 20,
+    "createdAt": "2025-12-10T00:00:00Z",
+    "generationMethod": "synthetic-stochastic-simulation",
+    "version": "1.0"
+  },
+  "samples": [
+    {
+      "sampleId": "CRISPR-001",
+      "timestamp": "2025-12-10T08:00:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.5,
+          "success_rate": 0.95,
+          "competent_cells_quality": "excellent"
+        },
+        "growth": {
+          "duration_hours": 12.0,
+          "od600_final": 2.1,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.5,
+          "cell_density": 2.05
+        },
+        "lysis": {
+          "duration_hours": 3.0,
+          "efficiency": 0.92
+        },
+        "purification": {
+          "duration_hours": 4.5,
+          "yield_loss_percent": 8.2,
+          "purity_score": 0.88
+        }
+      },
+      "metrics": {
+        "yield_ng": 4850,
+        "yield_percent": 82.5,
+        "quality_score": 0.89,
+        "concentration_ng_ul": 97.0,
+        "purity_a260_a280": 1.87,
+        "cost_usd": 45.20,
+        "total_duration_hours": 23.5
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.88,
+          "relaxed_fraction": 0.10,
+          "nicked_fraction": 0.02
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.99
+        },
+        "sequencing_coverage": 0.98,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Excellent protocol execution, all QC metrics within specification"
+    },
+    {
+      "sampleId": "CRISPR-002",
+      "timestamp": "2025-12-10T09:30:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.2,
+          "success_rate": 0.93,
+          "competent_cells_quality": "good"
+        },
+        "growth": {
+          "duration_hours": 12.5,
+          "od600_final": 2.3,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.5,
+          "cell_density": 2.25
+        },
+        "lysis": {
+          "duration_hours": 3.2,
+          "efficiency": 0.90
+        },
+        "purification": {
+          "duration_hours": 4.8,
+          "yield_loss_percent": 12.1,
+          "purity_score": 0.82
+        }
+      },
+      "metrics": {
+        "yield_ng": 4320,
+        "yield_percent": 74.8,
+        "quality_score": 0.81,
+        "concentration_ng_ul": 86.4,
+        "purity_a260_a280": 1.79,
+        "cost_usd": 43.80,
+        "total_duration_hours": 24.2
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.82,
+          "relaxed_fraction": 0.14,
+          "nicked_fraction": 0.04
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.98
+        },
+        "sequencing_coverage": 0.96,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Good protocol execution, slight yield variation within normal range"
+    },
+    {
+      "sampleId": "CRISPR-003",
+      "timestamp": "2025-12-10T11:00:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.8,
+          "success_rate": 0.88,
+          "competent_cells_quality": "fair"
+        },
+        "growth": {
+          "duration_hours": 13.5,
+          "od600_final": 1.9,
+          "growth_phase": "late-exponential"
+        },
+        "harvest": {
+          "duration_hours": 1.8,
+          "cell_density": 1.85
+        },
+        "lysis": {
+          "duration_hours": 3.5,
+          "efficiency": 0.87
+        },
+        "purification": {
+          "duration_hours": 5.2,
+          "yield_loss_percent": 18.5,
+          "purity_score": 0.78
+        }
+      },
+      "metrics": {
+        "yield_ng": 3650,
+        "yield_percent": 65.2,
+        "quality_score": 0.72,
+        "concentration_ng_ul": 73.0,
+        "purity_a260_a280": 1.72,
+        "cost_usd": 44.50,
+        "total_duration_hours": 25.8
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.75,
+          "relaxed_fraction": 0.18,
+          "nicked_fraction": 0.07
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1095],
+          "digestion_efficiency": 0.95
+        },
+        "sequencing_coverage": 0.92,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Acceptable results, recommend optimizing growth phase timing"
+    },
+    {
+      "sampleId": "CRISPR-004",
+      "timestamp": "2025-12-10T12:45:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.4,
+          "success_rate": 0.96,
+          "competent_cells_quality": "excellent"
+        },
+        "growth": {
+          "duration_hours": 12.0,
+          "od600_final": 2.2,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.5,
+          "cell_density": 2.15
+        },
+        "lysis": {
+          "duration_hours": 3.0,
+          "efficiency": 0.93
+        },
+        "purification": {
+          "duration_hours": 4.6,
+          "yield_loss_percent": 7.8,
+          "purity_score": 0.90
+        }
+      },
+      "metrics": {
+        "yield_ng": 5020,
+        "yield_percent": 85.2,
+        "quality_score": 0.91,
+        "concentration_ng_ul": 100.4,
+        "purity_a260_a280": 1.89,
+        "cost_usd": 45.05,
+        "total_duration_hours": 23.5
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.90,
+          "relaxed_fraction": 0.08,
+          "nicked_fraction": 0.02
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.99
+        },
+        "sequencing_coverage": 0.99,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Excellent results, recommend as reference standard"
+    },
+    {
+      "sampleId": "CRISPR-005",
+      "timestamp": "2025-12-10T14:15:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.6,
+          "success_rate": 0.91,
+          "competent_cells_quality": "good"
+        },
+        "growth": {
+          "duration_hours": 12.8,
+          "od600_final": 2.4,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.6,
+          "cell_density": 2.35
+        },
+        "lysis": {
+          "duration_hours": 3.1,
+          "efficiency": 0.91
+        },
+        "purification": {
+          "duration_hours": 4.7,
+          "yield_loss_percent": 10.5,
+          "purity_score": 0.85
+        }
+      },
+      "metrics": {
+        "yield_ng": 4580,
+        "yield_percent": 79.5,
+        "quality_score": 0.85,
+        "concentration_ng_ul": 91.6,
+        "purity_a260_a280": 1.84,
+        "cost_usd": 44.20,
+        "total_duration_hours": 24.8
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.85,
+          "relaxed_fraction": 0.12,
+          "nicked_fraction": 0.03
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.99
+        },
+        "sequencing_coverage": 0.97,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Good quality results, standard protocol execution"
+    },
+    {
+      "sampleId": "CRISPR-006",
+      "timestamp": "2025-12-10T16:00:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.3,
+          "success_rate": 0.94,
+          "competent_cells_quality": "excellent"
+        },
+        "growth": {
+          "duration_hours": 11.8,
+          "od600_final": 2.3,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.4,
+          "cell_density": 2.25
+        },
+        "lysis": {
+          "duration_hours": 2.9,
+          "efficiency": 0.94
+        },
+        "purification": {
+          "duration_hours": 4.4,
+          "yield_loss_percent": 6.5,
+          "purity_score": 0.91
+        }
+      },
+      "metrics": {
+        "yield_ng": 5120,
+        "yield_percent": 86.5,
+        "quality_score": 0.92,
+        "concentration_ng_ul": 102.4,
+        "purity_a260_a280": 1.91,
+        "cost_usd": 44.80,
+        "total_duration_hours": 23.0
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.91,
+          "relaxed_fraction": 0.07,
+          "nicked_fraction": 0.02
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.99
+        },
+        "sequencing_coverage": 0.99,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Excellent execution, best-in-batch performance"
+    },
+    {
+      "sampleId": "CRISPR-007",
+      "timestamp": "2025-12-10T17:30:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.9,
+          "success_rate": 0.85,
+          "competent_cells_quality": "fair"
+        },
+        "growth": {
+          "duration_hours": 14.0,
+          "od600_final": 1.8,
+          "growth_phase": "early-stationary"
+        },
+        "harvest": {
+          "duration_hours": 2.0,
+          "cell_density": 1.75
+        },
+        "lysis": {
+          "duration_hours": 3.8,
+          "efficiency": 0.84
+        },
+        "purification": {
+          "duration_hours": 5.5,
+          "yield_loss_percent": 22.3,
+          "purity_score": 0.75
+        }
+      },
+      "metrics": {
+        "yield_ng": 3120,
+        "yield_percent": 58.5,
+        "quality_score": 0.68,
+        "concentration_ng_ul": 62.4,
+        "purity_a260_a280": 1.68,
+        "cost_usd": 45.60,
+        "total_duration_hours": 26.2
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.70,
+          "relaxed_fraction": 0.22,
+          "nicked_fraction": 0.08
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1090],
+          "digestion_efficiency": 0.92
+        },
+        "sequencing_coverage": 0.88,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "warning",
+      "notes": "Below-optimal results, recommend rerunning with fresh competent cells"
+    },
+    {
+      "sampleId": "CRISPR-008",
+      "timestamp": "2025-12-10T19:00:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.5,
+          "success_rate": 0.92,
+          "competent_cells_quality": "good"
+        },
+        "growth": {
+          "duration_hours": 12.3,
+          "od600_final": 2.1,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.5,
+          "cell_density": 2.05
+        },
+        "lysis": {
+          "duration_hours": 3.1,
+          "efficiency": 0.90
+        },
+        "purification": {
+          "duration_hours": 4.6,
+          "yield_loss_percent": 9.8,
+          "purity_score": 0.86
+        }
+      },
+      "metrics": {
+        "yield_ng": 4670,
+        "yield_percent": 81.2,
+        "quality_score": 0.84,
+        "concentration_ng_ul": 93.4,
+        "purity_a260_a280": 1.83,
+        "cost_usd": 44.30,
+        "total_duration_hours": 24.0
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.84,
+          "relaxed_fraction": 0.13,
+          "nicked_fraction": 0.03
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.99
+        },
+        "sequencing_coverage": 0.96,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Good quality results, consistent with protocol standards"
+    },
+    {
+      "sampleId": "CRISPR-009",
+      "timestamp": "2025-12-10T20:30:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.7,
+          "success_rate": 0.89,
+          "competent_cells_quality": "good"
+        },
+        "growth": {
+          "duration_hours": 13.2,
+          "od600_final": 2.2,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.7,
+          "cell_density": 2.15
+        },
+        "lysis": {
+          "duration_hours": 3.3,
+          "efficiency": 0.88
+        },
+        "purification": {
+          "duration_hours": 4.9,
+          "yield_loss_percent": 11.2,
+          "purity_score": 0.83
+        }
+      },
+      "metrics": {
+        "yield_ng": 4390,
+        "yield_percent": 76.8,
+        "quality_score": 0.82,
+        "concentration_ng_ul": 87.8,
+        "purity_a260_a280": 1.80,
+        "cost_usd": 44.50,
+        "total_duration_hours": 24.8
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.81,
+          "relaxed_fraction": 0.15,
+          "nicked_fraction": 0.04
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.98
+        },
+        "sequencing_coverage": 0.95,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Acceptable results within quality standards"
+    },
+    {
+      "sampleId": "CRISPR-010",
+      "timestamp": "2025-12-10T22:00:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.4,
+          "success_rate": 0.95,
+          "competent_cells_quality": "excellent"
+        },
+        "growth": {
+          "duration_hours": 12.0,
+          "od600_final": 2.3,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.5,
+          "cell_density": 2.25
+        },
+        "lysis": {
+          "duration_hours": 3.0,
+          "efficiency": 0.92
+        },
+        "purification": {
+          "duration_hours": 4.5,
+          "yield_loss_percent": 8.5,
+          "purity_score": 0.88
+        }
+      },
+      "metrics": {
+        "yield_ng": 4890,
+        "yield_percent": 83.1,
+        "quality_score": 0.89,
+        "concentration_ng_ul": 97.8,
+        "purity_a260_a280": 1.86,
+        "cost_usd": 45.10,
+        "total_duration_hours": 23.5
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.87,
+          "relaxed_fraction": 0.10,
+          "nicked_fraction": 0.03
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.99
+        },
+        "sequencing_coverage": 0.98,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Excellent protocol execution, high-quality plasmid preparation"
+    },
+    {
+      "sampleId": "CRISPR-011",
+      "timestamp": "2025-12-11T08:00:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.6,
+          "success_rate": 0.90,
+          "competent_cells_quality": "good"
+        },
+        "growth": {
+          "duration_hours": 12.5,
+          "od600_final": 2.2,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.6,
+          "cell_density": 2.15
+        },
+        "lysis": {
+          "duration_hours": 3.2,
+          "efficiency": 0.89
+        },
+        "purification": {
+          "duration_hours": 4.7,
+          "yield_loss_percent": 10.2,
+          "purity_score": 0.84
+        }
+      },
+      "metrics": {
+        "yield_ng": 4520,
+        "yield_percent": 78.5,
+        "quality_score": 0.83,
+        "concentration_ng_ul": 90.4,
+        "purity_a260_a280": 1.82,
+        "cost_usd": 44.40,
+        "total_duration_hours": 24.6
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.83,
+          "relaxed_fraction": 0.13,
+          "nicked_fraction": 0.04
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.98
+        },
+        "sequencing_coverage": 0.96,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Standard quality results, routine protocol execution"
+    },
+    {
+      "sampleId": "CRISPR-012",
+      "timestamp": "2025-12-11T09:30:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.8,
+          "success_rate": 0.87,
+          "competent_cells_quality": "fair"
+        },
+        "growth": {
+          "duration_hours": 13.8,
+          "od600_final": 1.95,
+          "growth_phase": "late-exponential"
+        },
+        "harvest": {
+          "duration_hours": 1.9,
+          "cell_density": 1.90
+        },
+        "lysis": {
+          "duration_hours": 3.5,
+          "efficiency": 0.86
+        },
+        "purification": {
+          "duration_hours": 5.1,
+          "yield_loss_percent": 15.5,
+          "purity_score": 0.79
+        }
+      },
+      "metrics": {
+        "yield_ng": 3980,
+        "yield_percent": 69.2,
+        "quality_score": 0.75,
+        "concentration_ng_ul": 79.6,
+        "purity_a260_a280": 1.75,
+        "cost_usd": 44.70,
+        "total_duration_hours": 25.1
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.78,
+          "relaxed_fraction": 0.17,
+          "nicked_fraction": 0.05
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.96
+        },
+        "sequencing_coverage": 0.93,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "warning",
+      "notes": "Sub-optimal results, check competent cell storage conditions"
+    },
+    {
+      "sampleId": "CRISPR-013",
+      "timestamp": "2025-12-11T11:00:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.5,
+          "success_rate": 0.93,
+          "competent_cells_quality": "excellent"
+        },
+        "growth": {
+          "duration_hours": 12.2,
+          "od600_final": 2.2,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.5,
+          "cell_density": 2.15
+        },
+        "lysis": {
+          "duration_hours": 3.0,
+          "efficiency": 0.91
+        },
+        "purification": {
+          "duration_hours": 4.5,
+          "yield_loss_percent": 9.0,
+          "purity_score": 0.87
+        }
+      },
+      "metrics": {
+        "yield_ng": 4750,
+        "yield_percent": 80.8,
+        "quality_score": 0.87,
+        "concentration_ng_ul": 95.0,
+        "purity_a260_a280": 1.85,
+        "cost_usd": 44.90,
+        "total_duration_hours": 23.7
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.86,
+          "relaxed_fraction": 0.11,
+          "nicked_fraction": 0.03
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.99
+        },
+        "sequencing_coverage": 0.97,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Excellent execution, high-quality yield"
+    },
+    {
+      "sampleId": "CRISPR-014",
+      "timestamp": "2025-12-11T12:30:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.7,
+          "success_rate": 0.88,
+          "competent_cells_quality": "good"
+        },
+        "growth": {
+          "duration_hours": 12.8,
+          "od600_final": 2.1,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.6,
+          "cell_density": 2.05
+        },
+        "lysis": {
+          "duration_hours": 3.2,
+          "efficiency": 0.89
+        },
+        "purification": {
+          "duration_hours": 4.8,
+          "yield_loss_percent": 11.8,
+          "purity_score": 0.81
+        }
+      },
+      "metrics": {
+        "yield_ng": 4250,
+        "yield_percent": 73.5,
+        "quality_score": 0.79,
+        "concentration_ng_ul": 85.0,
+        "purity_a260_a280": 1.78,
+        "cost_usd": 44.60,
+        "total_duration_hours": 24.9
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.80,
+          "relaxed_fraction": 0.16,
+          "nicked_fraction": 0.04
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.97
+        },
+        "sequencing_coverage": 0.94,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Acceptable results, within normal variation"
+    },
+    {
+      "sampleId": "CRISPR-015",
+      "timestamp": "2025-12-11T14:00:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.4,
+          "success_rate": 0.96,
+          "competent_cells_quality": "excellent"
+        },
+        "growth": {
+          "duration_hours": 11.9,
+          "od600_final": 2.4,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.4,
+          "cell_density": 2.35
+        },
+        "lysis": {
+          "duration_hours": 2.9,
+          "efficiency": 0.94
+        },
+        "purification": {
+          "duration_hours": 4.3,
+          "yield_loss_percent": 6.2,
+          "purity_score": 0.92
+        }
+      },
+      "metrics": {
+        "yield_ng": 5280,
+        "yield_percent": 88.5,
+        "quality_score": 0.93,
+        "concentration_ng_ul": 105.6,
+        "purity_a260_a280": 1.93,
+        "cost_usd": 44.70,
+        "total_duration_hours": 22.9
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.93,
+          "relaxed_fraction": 0.06,
+          "nicked_fraction": 0.01
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.99
+        },
+        "sequencing_coverage": 0.99,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Outstanding results, best-in-batch execution"
+    },
+    {
+      "sampleId": "CRISPR-016",
+      "timestamp": "2025-12-11T15:30:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.8,
+          "success_rate": 0.86,
+          "competent_cells_quality": "fair"
+        },
+        "growth": {
+          "duration_hours": 14.2,
+          "od600_final": 1.85,
+          "growth_phase": "early-stationary"
+        },
+        "harvest": {
+          "duration_hours": 2.1,
+          "cell_density": 1.80
+        },
+        "lysis": {
+          "duration_hours": 3.8,
+          "efficiency": 0.83
+        },
+        "purification": {
+          "duration_hours": 5.3,
+          "yield_loss_percent": 20.5,
+          "purity_score": 0.76
+        }
+      },
+      "metrics": {
+        "yield_ng": 3240,
+        "yield_percent": 60.2,
+        "quality_score": 0.70,
+        "concentration_ng_ul": 64.8,
+        "purity_a260_a280": 1.70,
+        "cost_usd": 45.85,
+        "total_duration_hours": 26.2
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.72,
+          "relaxed_fraction": 0.20,
+          "nicked_fraction": 0.08
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1085],
+          "digestion_efficiency": 0.91
+        },
+        "sequencing_coverage": 0.89,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "warning",
+      "notes": "Poor execution, recommend protocol review and retraining"
+    },
+    {
+      "sampleId": "CRISPR-017",
+      "timestamp": "2025-12-11T17:00:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.5,
+          "success_rate": 0.94,
+          "competent_cells_quality": "excellent"
+        },
+        "growth": {
+          "duration_hours": 12.1,
+          "od600_final": 2.2,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.5,
+          "cell_density": 2.15
+        },
+        "lysis": {
+          "duration_hours": 3.0,
+          "efficiency": 0.92
+        },
+        "purification": {
+          "duration_hours": 4.5,
+          "yield_loss_percent": 8.2,
+          "purity_score": 0.88
+        }
+      },
+      "metrics": {
+        "yield_ng": 4860,
+        "yield_percent": 82.7,
+        "quality_score": 0.88,
+        "concentration_ng_ul": 97.2,
+        "purity_a260_a280": 1.87,
+        "cost_usd": 45.00,
+        "total_duration_hours": 23.6
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.88,
+          "relaxed_fraction": 0.10,
+          "nicked_fraction": 0.02
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.99
+        },
+        "sequencing_coverage": 0.98,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Excellent quality results, standard best practices"
+    },
+    {
+      "sampleId": "CRISPR-018",
+      "timestamp": "2025-12-11T18:30:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.6,
+          "success_rate": 0.91,
+          "competent_cells_quality": "good"
+        },
+        "growth": {
+          "duration_hours": 12.6,
+          "od600_final": 2.1,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.6,
+          "cell_density": 2.05
+        },
+        "lysis": {
+          "duration_hours": 3.2,
+          "efficiency": 0.90
+        },
+        "purification": {
+          "duration_hours": 4.7,
+          "yield_loss_percent": 10.5,
+          "purity_score": 0.84
+        }
+      },
+      "metrics": {
+        "yield_ng": 4480,
+        "yield_percent": 77.9,
+        "quality_score": 0.83,
+        "concentration_ng_ul": 89.6,
+        "purity_a260_a280": 1.81,
+        "cost_usd": 44.50,
+        "total_duration_hours": 24.7
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.82,
+          "relaxed_fraction": 0.14,
+          "nicked_fraction": 0.04
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.98
+        },
+        "sequencing_coverage": 0.96,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Good quality results, consistent performance"
+    },
+    {
+      "sampleId": "CRISPR-019",
+      "timestamp": "2025-12-11T20:00:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.3,
+          "success_rate": 0.97,
+          "competent_cells_quality": "excellent"
+        },
+        "growth": {
+          "duration_hours": 11.8,
+          "od600_final": 2.3,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.4,
+          "cell_density": 2.25
+        },
+        "lysis": {
+          "duration_hours": 2.9,
+          "efficiency": 0.95
+        },
+        "purification": {
+          "duration_hours": 4.3,
+          "yield_loss_percent": 5.8,
+          "purity_score": 0.93
+        }
+      },
+      "metrics": {
+        "yield_ng": 5380,
+        "yield_percent": 89.8,
+        "quality_score": 0.94,
+        "concentration_ng_ul": 107.6,
+        "purity_a260_a280": 1.94,
+        "cost_usd": 44.60,
+        "total_duration_hours": 22.7
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.94,
+          "relaxed_fraction": 0.05,
+          "nicked_fraction": 0.01
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.99
+        },
+        "sequencing_coverage": 0.99,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Outstanding execution, highest quality in batch"
+    },
+    {
+      "sampleId": "CRISPR-020",
+      "timestamp": "2025-12-11T21:30:00Z",
+      "protocolSteps": {
+        "transformation": {
+          "duration_hours": 2.7,
+          "success_rate": 0.89,
+          "competent_cells_quality": "good"
+        },
+        "growth": {
+          "duration_hours": 12.7,
+          "od600_final": 2.15,
+          "growth_phase": "stationary"
+        },
+        "harvest": {
+          "duration_hours": 1.6,
+          "cell_density": 2.10
+        },
+        "lysis": {
+          "duration_hours": 3.2,
+          "efficiency": 0.89
+        },
+        "purification": {
+          "duration_hours": 4.8,
+          "yield_loss_percent": 11.0,
+          "purity_score": 0.83
+        }
+      },
+      "metrics": {
+        "yield_ng": 4410,
+        "yield_percent": 76.2,
+        "quality_score": 0.81,
+        "concentration_ng_ul": 88.2,
+        "purity_a260_a280": 1.80,
+        "cost_usd": 44.70,
+        "total_duration_hours": 25.0
+      },
+      "assayResults": {
+        "agarose_gel": {
+          "supercoiled_fraction": 0.81,
+          "relaxed_fraction": 0.15,
+          "nicked_fraction": 0.04
+        },
+        "restriction_digest": {
+          "expected_bands": [3425, 2156, 1098],
+          "observed_bands": [3425, 2156, 1098],
+          "digestion_efficiency": 0.98
+        },
+        "sequencing_coverage": 0.95,
+        "insert_integrity": "confirmed"
+      },
+      "reagentUsage": {
+        "lysis_buffer_ml": 5.0,
+        "binding_buffer_ml": 25.0,
+        "elution_buffer_ml": 2.0,
+        "protease_inhibitor_units": 50
+      },
+      "equipment": {
+        "thermocycler": "Applied Biosystems 7900HT",
+        "centrifuge": "Eppendorf 5810R",
+        "magnetic_separator": "KingFisher Duo",
+        "incubator": "Eppendorf New BrunswickBioFlo"
+      },
+      "status": "passed",
+      "notes": "Standard quality results, routine batch completion"
+    }
+  ],
+  "summary": {
+    "totalSamples": 20,
+    "passedQC": 17,
+    "warningQC": 3,
+    "failedQC": 0,
+    "avgYield_percent": 78.4,
+    "avgYield_ng": 4520,
+    "avgCost_usd": 44.56,
+    "avgDuration_hours": 24.1,
+    "avgQualityScore": 0.83,
+    "yieldRange": {
+      "min_percent": 58.5,
+      "max_percent": 89.8,
+      "median_percent": 78.5,
+      "stddev_percent": 8.2
+    },
+    "costRange": {
+      "min_usd": 43.80,
+      "max_usd": 45.85,
+      "median_usd": 44.50,
+      "stddev_usd": 0.58
+    }
+  }
+}

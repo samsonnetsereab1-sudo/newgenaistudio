@@ -1,0 +1,257 @@
+---
+# Cell Lysis Detection v1
+# Detects cell lysis via imaging (membrane integrity stains) and flow cytometry
+# Scope: Computational detection from imaging & flow signatures; no procedural instructions
+# Regulatory: FDA analytical method validation, Health Canada GMP
+
+metadata:
+  version: "1.0"
+  last_updated: "2025-12-10"
+  regulatory_frameworks:
+    - "FDA Analytical Method Validation"
+    - "Health Canada GMP"
+  safety_principles:
+    - "Computational detection only; human confirmation required"
+    - "Results inform assay quality assessment, not cell viability decisions for release"
+
+imaging_based_lysis_detection:
+  principle: "Membrane integrity stains (e.g., PI, 7-AAD, propidium iodide) exclude from live cells"
+  
+  image_acquisition:
+    staining_protocol: "Propidium Iodide (PI) or 7-AAD on fixed or live cells"
+    imaging_modality: "Fluorescence microscopy (red channel: 488 nm excitation, 600–650 nm emission)"
+    image_specs:
+      format: "OME-TIFF or JPEG"
+      resolution_dpi: 600
+      bit_depth: "16-bit (preferred) or 8-bit"
+      channels:
+        - name: "DAPI or Hoechst (blue, nuclear stain, all cells)"
+        - name: "PI or 7-AAD (red, membrane-compromised cells)"
+    
+    metadata_required:
+      - sample_id: "string"
+      - stain_timestamp: "ISO8601"
+      - imaging_timestamp: "ISO8601"
+      - stain_concentration: "µg/mL"
+      - incubation_time_min: "float"
+      - incubation_temperature_c: "float"
+      - sample_viability_reference: "string (optional, from parallel flow cytometry)"
+
+  preprocessing:
+    step_1_image_registration:
+      method: "Phase correlation or feature matching (DAPI + PI channels)"
+      tolerance_pixels: 2
+    
+    step_2_background_subtraction:
+      method: "Rolling ball or morphological opening"
+      purpose: "Isolate cell signal from autofluorescence"
+    
+    step_3_cell_segmentation:
+      method: "DAPI channel (nuclear) → nuclei detection via U-Net or CCA"
+      algorithm: "Connected component analysis (scipy.ndimage.label)"
+      filtering:
+        - "Min nucleus area: 20 pixels"
+        - "Max nucleus area: 2000 pixels"
+        - "Solidity > 0.7"
+    
+    step_4_lysis_classification_per_cell:
+      input: "Nucleus mask (DAPI) + PI intensity in corresponding region"
+      rules:
+        live_cell: "PI intensity < background + 1×σ_bg"
+        lysed_cell: "PI intensity > background + 3×σ_bg AND nucleoplasm positive"
+        questionable: "background + 1×σ_bg ≤ PI intensity ≤ background + 3×σ_bg"
+      output: "Per-cell binary label (live = 0, lysed = 1, ambiguous = -1)"
+
+  image_level_analysis:
+    metrics:
+      total_cells_detected: "integer (nuclei count from DAPI)"
+      lysed_cells_count: "integer (DAPI+ AND PI+)"
+      live_cells_count: "integer (DAPI+ AND PI-)"
+      lysis_rate_percent: "(lysed_cells / total_cells) × 100"
+      lysis_ci_lower: "Binomial 95% CI lower"
+      lysis_ci_upper: "Binomial 95% CI upper"
+    
+    qc_checks:
+      - "Total cells > 100 (statistical power)"
+      - "DAPI background consistent (CV < 20%)"
+      - "PI positive control well visible (if applicable)"
+      - "No saturation in PI channel (<5% pixels at max)"
+    
+    output: "Lysis report {lysis_rate_percent, CI, cell_counts, qc_status}"
+
+flow_cytometry_based_lysis_detection:
+  principle: "Membrane integrity dyes (PI, 7-AAD, SYTOX) exclude from live cells; dead cells show increased FSC/SSC"
+  
+  sample_acquisition:
+    cell_staining:
+      method: "Incubate cells + PI (5–10 µg/mL) for 5 min at room temp (dark)"
+      alternative: "7-AAD or SYTOX-equivalent dye"
+    
+    flow_parameters:
+      laser_488nm: "Power 25 mW (standard)"
+      laser_405nm: "Hoechst or DAPI (optional, nuclear stain)"
+      detection:
+        - name: "FSC-A (Forward Scatter Area)"
+          laser: "488 nm"
+        - name: "SSC-A (Side Scatter Area)"
+          laser: "488 nm"
+        - name: "PI-A (PI fluorescence, red channel)"
+          laser: "488 nm, filter 600–650 nm"
+    
+    acquisition_parameters:
+      events_to_collect: 10000  # minimum for reliable statistics
+      flow_rate: "low to medium (sample-dependent)"
+      gating_strategy: "Live gate: (FSC-A, SSC-A) to exclude debris; single cells gate (FSC-A vs FSC-H)"
+
+  data_processing:
+    step_1_debris_removal:
+      gate: "FSC-A > 5000 AND SSC-A > 1000 (approximate; adjust per instrument)"
+      purpose: "Remove small particles and cell fragments"
+    
+    step_2_singlet_selection:
+      gate: "FSC-A vs FSC-H ratio (linearity indicates singlets)"
+      purpose: "Exclude doublets and aggregates"
+      method: "Manual gate or automated via FlowJo/CytoExplorer"
+    
+    step_3_viability_classification:
+      live_cells: "PI-A < threshold (typically 10^2 to 10^3 depending on instrument)"
+      lysed_cells: "PI-A ≥ threshold"
+      threshold_determination: "Set on negative control (untreated cells) + positive control (100% lysed cells)"
+    
+    step_4_population_gating:
+      alternative_1_fsc_ssc_morphology:
+        description: "Lysed/dying cells often show increased SSC (granularity) & decreased FSC (size reduction)"
+        gate: "Manual or automated polygon gate on FSC vs SSC"
+      alternative_2_pi_intensity:
+        description: "High PI intensity correlates with lysis"
+        gate: "PI-A threshold (set using controls)"
+
+  metrics_per_sample:
+    total_events_recorded: "integer"
+    events_in_live_gate: "integer"
+    events_in_lysed_gate: "integer"
+    lysis_rate_percent: "(lysed_events / total_events_live_gates) × 100"
+    lysis_ci: "Binomial 95% CI"
+    mean_pi_intensity_live: "float (MFI of live gate)"
+    mean_pi_intensity_lysed: "float (MFI of lysed gate)"
+    separation_index: "(mean_lysed - mean_live) / (2 × sqrt(sd_live² + sd_lysed²))"
+    separation_acceptable: "≥ 2.0 (adequate discrimination)"
+
+  qc_validation:
+    control_samples:
+      negative_control: "Untreated cells; expected lysis rate < 5%"
+      positive_control: "Heat-killed or osmotically lysed cells; expected lysis rate > 95%"
+    
+    acceptance_criteria:
+      negative_control_lysis_max_percent: 5
+      positive_control_lysis_min_percent: 90
+      separation_index_min: 1.8
+      cv_replicates_max_percent: 15
+
+data_integration:
+  joint_analysis:
+    input: "Imaging lysis rate + Flow cytometry lysis rate (same sample, parallel)"
+    comparison: "Pearson correlation (should be r > 0.85)"
+    interpretation:
+      - "High agreement → Assay stable; both methods acceptable"
+      - "Low agreement → Flag systematic difference; investigate staining, gating"
+  
+  protocol_selection:
+    imaging_preferred_for: "Fixed cells, spatial analysis, morphology correlation"
+    flow_preferred_for: "Live cells, high-throughput, kinetic studies"
+    combined_protocol: "Use both for comprehensive characterization (first qualification)"
+
+model_qualification:
+  benchmark_dataset:
+    composition:
+      known_viability_samples: 20  # 0%, 10%, 25%, 50%, 75%, 90%, 95%, 100% lysis
+      replicates_per_condition: 3
+    ground_truth:
+      method: "Plate count (CFU) or flow cytometry (reference instrument)"
+    acceptance_criteria:
+      lysis_rate_mae_percent: 3  # mean absolute error ≤ 3%
+      ci_coverage_95_percent: 90  # 95% CIs contain true value ≥ 90% of time
+
+  validation_frequency:
+    initial: "Before first deployment (3+ conditions, ≥3 replicates each)"
+    ongoing: "Quarterly; new operator certification"
+    revalidation_trigger: "Instrument calibration drift; stain lot change"
+
+audit_trail:
+  logged_artifacts:
+    imaging_based:
+      - "Raw image (DAPI + PI channels)"
+      - "Segmentation mask (nuclei)"
+      - "Per-cell lysis classification (CSV)"
+      - "Image-level metrics (JSON)"
+      - "QC report + flags"
+    
+    flow_based:
+      - "FCS file (raw flow data)"
+      - "Gating template applied"
+      - "Population statistics (FCS gate coordinates, count, %)"
+      - "Separation index + MFI values"
+    
+    common:
+      - "Sample ID + metadata"
+      - "Stain lot & expiry"
+      - "Operator ID"
+      - "Timestamp"
+      - "Instrument model / settings"
+      - "Notes (e.g., 'positive control excellent', 'negative control slight elevation')"
+  
+  export_formats:
+    - "JSON (full audit + metrics)"
+    - "CSV (per-cell or per-event data)"
+    - "PDF (summary report + visualizations)"
+
+ci_smoke_tests:
+  test_imaging_pipeline:
+    input: "Synthetic microscopy image (DAPI + PI channels)"
+    expected: "Segmentation mask; lysis rate calculated; metrics valid"
+    timeout_seconds: 20
+  test_flow_processing:
+    input: "Synthetic FCS file (10k events, 3 parameters)"
+    expected: "Singlet gate applied; lysis rate ≤ 5% (negative control)"
+    timeout_seconds: 15
+  test_data_integration:
+    input: "Imaging + flow results on same sample"
+    expected: "Correlation calculated; agreement flagged (r > 0.85 or flagged)"
+    timeout_seconds: 10
+
+examples:
+  imaging_result:
+    sample_id: "SAMPLE-LYSIS-20251210-001"
+    stain_type: "Propidium Iodide"
+    total_cells_detected: 487
+    lysed_cells_count: 12
+    live_cells_count: 475
+    lysis_rate_percent: 2.46
+    lysis_ci_lower_percent: 1.16
+    lysis_ci_upper_percent: 4.46
+    ci_level: 0.95
+    qc_status: "pass"
+    notes: "Excellent nuclear staining; minimal background"
+
+  flow_result:
+    sample_id: "SAMPLE-LYSIS-20251210-001"
+    total_events: 10000
+    events_singlet_gate: 9500
+    events_live: 9267  # PI negative
+    events_lysed: 233  # PI positive
+    lysis_rate_percent: 2.46
+    lysis_ci_lower_percent: 1.94
+    lysis_ci_upper_percent: 3.14
+    mean_pi_mfi_live: 542
+    mean_pi_mfi_lysed: 8750
+    separation_index: 2.47
+    separation_acceptable: true
+    qc_status: "pass"
+
+  integration_report:
+    sample_id: "SAMPLE-LYSIS-20251210-001"
+    imaging_lysis_rate_percent: 2.46
+    flow_lysis_rate_percent: 2.46
+    correlation_pearson_r: 0.98
+    agreement_assessment: "excellent (r > 0.85)"
+    recommendation: "Both methods reliable; proceed with confidence"

@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "dataset_id": "synthetic-plate-images-500-samples",
+    "version": "1.0",
+    "created": "2025-12-10T12:00:00Z",
+    "description": "Synthetic and annotated plate images for viable counts image pipeline validation",
+    "purpose": "CI/CD smoke testing and model qualification benchmarking",
+    "regulatory_context": "FDA analytical method validation (ICH Q2(R2))",
+    "data_composition": {
+      "synthetic_images": 400,
+      "annotated_real_images": 100
+    }
+  },
+  "image_samples": [
+    {
+      "image_id": "plate-synthetic-001",
+      "image_type": "synthetic_generated",
+      "source": "Procedural generation algorithm (Perlin noise + blob morphology)",
+      "organism": "Escherichia coli",
+      "media_type": "TSA (Tryptic Soy Agar)",
+      "dilution_factor": 100000,
+      "ground_truth_colony_count": 42,
+      "image_specs": {
+        "resolution_dpi": 600,
+        "format": "PNG",
+        "bit_depth": "24-bit RGB",
+        "dimensions_pixels": [1024, 1024],
+        "background_color": "tan",
+        "colony_color_range": "white-beige"
+      },
+      "segmentation_mask_available": true,
+      "annotation_confidence": 0.99,
+      "annotator_count": 2,
+      "consensus": true,
+      "cfu_per_ml_ground_truth": 4200000,
+      "cfu_per_ml_ci_lower": 4000000,
+      "cfu_per_ml_ci_upper": 4420000
+    },
+    {
+      "image_id": "plate-synthetic-002",
+      "image_type": "synthetic_generated",
+      "organism": "Bacillus subtilis",
+      "media_type": "TSA",
+      "dilution_factor": 1000000,
+      "ground_truth_colony_count": 28,
+      "cfu_per_ml_ground_truth": 2800000,
+      "image_specs": {
+        "resolution_dpi": 600,
+        "format": "PNG",
+        "bit_depth": "24-bit RGB",
+        "dimensions_pixels": [1024, 1024]
+      }
+    },
+    {
+      "image_id": "plate-synthetic-003",
+      "image_type": "synthetic_generated",
+      "organism": "Staphylococcus aureus",
+      "media_type": "TSA",
+      "dilution_factor": 100000,
+      "ground_truth_colony_count": 75,
+      "cfu_per_ml_ground_truth": 7500000,
+      "image_specs": {
+        "resolution_dpi": 600,
+        "format": "PNG",
+        "bit_depth": "24-bit RGB",
+        "dimensions_pixels": [1024, 1024]
+      }
+    },
+    {
+      "image_id": "plate-real-annotated-001",
+      "image_type": "real_anonymized",
+      "source": "Archived laboratory plate image (de-identified)",
+      "organism": "Escherichia coli",
+      "media_type": "LB agar",
+      "dilution_factor": 100000,
+      "ground_truth_colony_count": 48,
+      "annotation_confidence": 0.95,
+      "annotator_count": 2,
+      "consensus": true,
+      "cfu_per_ml_ground_truth": 4800000,
+      "image_quality": "good (sharp focus, even illumination)",
+      "notes": "Slight edge darkening; not affecting central counting area"
+    },
+    {
+      "image_id": "plate-real-annotated-002",
+      "image_type": "real_anonymized",
+      "organism": "Pseudomonas aeruginosa",
+      "media_type": "TSA",
+      "dilution_factor": 10000000,
+      "ground_truth_colony_count": 15,
+      "cfu_per_ml_ground_truth": 150000000,
+      "image_quality": "excellent",
+      "notes": "High-density plate; clear colony separation"
+    }
+  ],
+  "dataset_statistics": {
+    "total_images": 500,
+    "colony_count_range": {
+      "minimum": 5,
+      "maximum": 200,
+      "mean": 68,
+      "median": 65,
+      "std_dev": 32
+    },
+    "image_quality_distribution": {
+      "excellent": 320,
+      "good": 150,
+      "fair": 25,
+      "poor": 5
+    },
+    "organism_distribution": {
+      "Escherichia coli": 180,
+      "Bacillus subtilis": 120,
+      "Staphylococcus aureus": 100,
+      "Pseudomonas aeruginosa": 80,
+      "Candida albicans": 40
+    },
+    "media_distribution": {
+      "TSA": 280,
+      "LB agar": 150,
+      "YPD": 70
+    },
+    "dilution_factor_range": {
+      "minimum": 1000,
+      "maximum": 100000000,
+      "common_values": [100000, 1000000, 10000000]
+    }
+  },
+  "usage_for_ci_smoke_tests": {
+    "test_segmentation_model": {
+      "subset_size": 10,
+      "selection_method": "Stratified random sampling across colony count ranges",
+      "expected_mae_colonies": 2,
+      "timeout_seconds": 30
+    },
+    "test_cfu_calculation": {
+      "subset_size": 20,
+      "selection_method": "All dilution factors represented",
+      "expected_accuracy_percent": 95,
+      "timeout_seconds": 10
+    },
+    "test_uncertainty_quantification": {
+      "subset_size": 5,
+      "replicate_sets": 3,
+      "expected_cv_percent_max": 20,
+      "timeout_seconds": 60
+    }
+  },
+  "data_access_and_licensing": {
+    "synthetic_images": "CC0 Public Domain (no restrictions)",
+    "real_anonymized_images": "Restricted: Internal use only; patient/sample identifiers removed per HIPAA/GDPR"
+  }
+}

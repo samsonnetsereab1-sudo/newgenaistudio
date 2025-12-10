@@ -1,0 +1,24 @@
+{
+  "name": "@newgen/adapter-simulator",
+  "version": "1.0.0-alpha",
+  "description": "OPC-UA device simulator for NewGen Studio instrument adapter",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "node-opcua": "^2.35.0",
+    "pino": "^8.17.0",
+    "pino-pretty": "^10.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

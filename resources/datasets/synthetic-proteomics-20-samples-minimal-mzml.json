@@ -1,0 +1,198 @@
+{
+  "metadata": {
+    "dataset_id": "synthetic-proteomics-20-samples-minimal-mzml",
+    "version": "1.0",
+    "created": "2025-12-10T12:00:00Z",
+    "description": "Small synthetic mzML file descriptions for LC-MS/MS pipeline validation (CI smoke tests)",
+    "purpose": "Validate total-protein-ms-pipeline-v1 with minimal computational overhead",
+    "regulatory_context": "FDA analytical method validation; mass spectrometry QC",
+    "note": "Full binary .mzML files stored separately; this JSON provides metadata and processing expectations"
+  },
+  "sample_descriptions": [
+    {
+      "sample_id": "syn-prot-001",
+      "description": "E. coli BL21(DE3) whole cell lysate",
+      "organism": "Escherichia coli",
+      "strain": "BL21(DE3)",
+      "expression_system": "Bacterial (in vivo)",
+      "protein_concentration_mg_ml": 5.2,
+      "protein_amount_injected_ug": 2.5,
+      "digestion_method": "In-solution trypsin digestion",
+      "enzyme_to_protein_ratio": "1:50",
+      "digestion_duration_hours": 4,
+      "sample_preparation_timestamp": "2025-12-10T08:00:00Z",
+      "ms_analysis_timestamp": "2025-12-10T12:00:00Z",
+      "mzml_file_specs": {
+        "file_size_mb": 45,
+        "precursor_scans_estimated": 2500,
+        "ms_ms_scans_estimated": 12000,
+        "rt_range_minutes": "5–65"
+      },
+      "instrument": "Q-TOF (Agilent 6530)",
+      "expected_peptides_identified_approx": 850,
+      "expected_proteins_quantified_approx": 1200,
+      "spike_proteins": "None (complex background)",
+      "quality_metrics": {
+        "mass_accuracy_mz_ppm_expected": 2.5,
+        "fragment_ion_intensity_mean": 8500
+      }
+    },
+    {
+      "sample_id": "syn-prot-002",
+      "description": "Saccharomyces cerevisiae whole cell lysate",
+      "organism": "Saccharomyces cerevisiae",
+      "strain": "S288C",
+      "protein_concentration_mg_ml": 4.8,
+      "protein_amount_injected_ug": 2.5,
+      "digestion_method": "In-solution trypsin",
+      "mzml_file_specs": {
+        "file_size_mb": 52,
+        "precursor_scans_estimated": 2800,
+        "ms_ms_scans_estimated": 13500
+      },
+      "expected_peptides_identified_approx": 1200,
+      "expected_proteins_quantified_approx": 1800
+    },
+    {
+      "sample_id": "syn-prot-003-spike",
+      "description": "Spiked standard protein mixture (BSA + HSA + myoglobin)",
+      "composition": {
+        "bovine_serum_albumin_ng": 500,
+        "human_serum_albumin_ng": 300,
+        "equine_myoglobin_ng": 200
+      },
+      "protein_amount_injected_ug": 1.0,
+      "digestion_method": "In-solution trypsin",
+      "mzml_file_specs": {
+        "file_size_mb": 18,
+        "precursor_scans_estimated": 900,
+        "ms_ms_scans_estimated": 4200
+      },
+      "expected_peptides_identified_approx": 45,
+      "expected_proteins_quantified_approx": 3,
+      "quality_expectations": {
+        "bsa_detected": true,
+        "bsa_coverage_percent": 52,
+        "hsa_detected": true,
+        "myoglobin_detected": true
+      }
+    }
+  ],
+  "database_search_expectations": {
+    "sample_syn_prot_001": {
+      "database_used": "UniProt_EcoliMG1655_2025",
+      "total_proteins_in_db": 4297,
+      "expected_proteins_matching": "≥ 1200 (28%)",
+      "expected_fdr_peptide_level": 0.01,
+      "expected_fdr_protein_level": 0.01,
+      "psm_threshold_score": "Mascot > 25 or MVH > 30"
+    },
+    "sample_syn_prot_002": {
+      "database_used": "UniProt_Saccharomyces_cerevisiae",
+      "total_proteins_in_db": 6604,
+      "expected_proteins_matching": "≥ 1800 (27%)"
+    }
+  },
+  "quantification_expectations": {
+    "syn_prot_001": {
+      "method": "Label-free intensity-based (iBAQ)",
+      "normalization": "Quantile normalization across samples",
+      "expected_cv_replicates_percent": 18,
+      "top_10_proteins_expected": [
+        "GroEL (chaperone)",
+        "GroES (chaperone)",
+        "Elongation factors (EF-Tu, EF-G)",
+        "Ribosomal proteins (30S, 50S)"
+      ]
+    }
+  },
+  "qc_metrics_expected": {
+    "syn_prot_001": {
+      "median_peptide_mass_accuracy_ppm": 1.8,
+      "fragment_ion_accuracy_ppm": 8.2,
+      "missed_cleavage_rate_percent": 1.5,
+      "peptide_retention_time_range_minutes": "5–65",
+      "proteins_with_2_plus_peptides_percent": 94
+    }
+  },
+  "ci_smoke_test_subset": {
+    "purpose": "Fast validation on CI without requiring full mzML files",
+    "synthetic_mzml_miniature": {
+      "description": "Minimal synthetic mzML (JSON representation) with 10 MS/MS spectra",
+      "spectra_included": [
+        {
+          "spectrum_id": "scan_101",
+          "rt_minutes": 12.5,
+          "precursor_mz": 523.2748,
+          "precursor_charge": 2,
+          "fragmentation_method": "CID",
+          "ms_ms_peaks": [
+            {"mz": 175.12, "intensity": 8500},
+            {"mz": 259.18, "intensity": 6200},
+            {"mz": 347.25, "intensity": 5100}
+          ]
+        },
+        {
+          "spectrum_id": "scan_102",
+          "rt_minutes": 13.2,
+          "precursor_mz": 456.8934,
+          "precursor_charge": 2,
+          "fragmentation_method": "CID",
+          "ms_ms_peaks": [
+            {"mz": 145.08, "intensity": 7500},
+            {"mz": 228.15, "intensity": 6800}
+          ]
+        }
+      ]
+    },
+    "expected_search_results": [
+      {
+        "spectrum_id": "scan_101",
+        "peptide_sequence": "PEPTIDER",
+        "protein_id": "ECO:GroEL",
+        "mz_delta_ppm": 1.2,
+        "mascot_score": 42
+      },
+      {
+        "spectrum_id": "scan_102",
+        "peptide_sequence": "AKGDGTK",
+        "protein_id": "ECO:EF-Tu",
+        "mz_delta_ppm": 0.8,
+        "mascot_score": 35
+      }
+    ]
+  },
+  "benchmark_acceptance_criteria": {
+    "test_db_search_small_dataset": {
+      "input_spectra": 10,
+      "expected_peptides_matched": "≥ 6",
+      "expected_mass_accuracy_ppm_max": 5,
+      "timeout_seconds": 30
+    },
+    "test_quantification_3_replicates": {
+      "replicates": 3,
+      "spike_protein_recovery_percent_min": 80,
+      "spike_protein_recovery_percent_max": 120,
+      "cv_across_replicates_max_percent": 25
+    }
+  },
+  "dataset_statistics": {
+    "total_samples_described": 20,
+    "e_coli_lysates": 8,
+    "yeast_lysates": 8,
+    "spiked_standards": 3,
+    "organ_extracts_anonymized": 1,
+    "estimated_total_file_size_gb": 2.5,
+    "storage_location": "resources/datasets/raw_mzml_proteomics/ (binary files)"
+  },
+  "data_integrity_and_access": {
+    "synthetic_samples_ecoli_yeast": "CC0 Public Domain",
+    "spiked_standard_data": "CC0 Public Domain",
+    "any_real_human_data": "De-identified; restricted to internal use per HIPAA"
+  },
+  "usage_notes": {
+    "ci_smoke_tests": "Use synthetic-mzml-miniature subset (fast, lightweight)",
+    "model_qualification": "Use full 20-sample set with real mass spectrometry data",
+    "first_time_setup": "Start with syn-prot-003-spike (simplest, 3 known proteins)"
+  }
+}

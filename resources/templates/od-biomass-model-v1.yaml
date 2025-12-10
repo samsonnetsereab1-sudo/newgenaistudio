@@ -1,0 +1,217 @@
+---
+# OD → Biomass Model v1
+# Calibrates optical density (OD600) measurements to biomass estimates
+# Scope: Time-series telemetry ingestion, statistical/surrogate models, anomaly detection
+# Regulatory: FDA analytical method validation, Health Canada GMP
+
+metadata:
+  version: "1.0"
+  last_updated: "2025-12-10"
+  regulatory_frameworks:
+    - "FDA Analytical Method Validation"
+    - "Health Canada GMP"
+
+data_ingestion:
+  source: "Microplate reader (Tecan, BMG, Molecular Devices) or benchtop spectrophotometer"
+  telemetry_schema:
+    time_series:
+      - timestamp: "ISO8601"
+      - well_or_cuvette_id: "string (e.g., 'A1', 'repl_1')"
+      - od600_value: "float [0, 4.0]"
+      - temperature_celsius: "float"
+      - plate_id: "string"
+    metadata:
+      strain_id: "string (e.g., 'WT', 'MUT-003')"
+      medium_type: "string (e.g., 'LB', 'TB', 'minimal medium A')"
+      inoculum_source: "string (overnight culture id)"
+      culture_vessel: "string (flask volume, aeration, etc.)"
+      sampling_interval_minutes: "float"
+
+  data_quality_checks:
+    - "No NaN or negative values"
+    - "OD600 monotonically increasing (with allowed noise ±0.02)"
+    - "Temperature within strain-specific growth range"
+    - "Timestamps strictly increasing"
+
+  storage:
+    format: "JSON time-series or TimescaleDB/InfluxDB"
+    retention: "Indefinite (immutable archive per ALCOA+)"
+
+calibration_dataset:
+  collection:
+    design: "Replicate cultures (n=3) × strain (n=1+) × medium (n=1+)"
+    sampling: "Every 30–60 minutes for 24–48 hours"
+    simultaneously_measure:
+      - "OD600 (optical density at 600 nm)"
+      - "Dry cell weight (DCW) via filtration + drying"
+      - "Cell count (hemocytometer or automated counter)"
+      - "Viability (plate count or flow cytometry)"
+    target_od_range: "0.05 to 2.5 (covers lag through stationary)"
+  
+  acceptance_criteria:
+    biological_replicates_minimum: 3
+    technical_replicates_minimum: 2
+    measurement_cv_od: "< 5%"
+    measurement_cv_dcw: "< 8%"
+
+model_types:
+  linear_statistical_model:
+    form: "biomass_g_per_L = intercept + slope × OD600"
+    fit_method: "Ordinary Least Squares (OLS)"
+    uncertainty:
+      confidence_interval: "95% CI on slope & intercept"
+      prediction_interval: "95% PI on predicted biomass"
+    acceptance_criteria:
+      r_squared_min: 0.90
+      rmse_g_per_l_max: 0.15
+
+  nonlinear_surrogate_model:
+    form: "Gaussian Process (GP) or Random Forest"
+    features:
+      - "OD600"
+      - "OD600_slope (dOD/dt)"
+      - "Temperature"
+      - "Time since inoculation (hours)"
+    fit_method: "Cross-validated hyperparameter optimization"
+    uncertainty:
+      output: "Mean + 95% predictive interval (from model)"
+    acceptance_criteria:
+      r_squared_min: 0.92
+      rmse_g_per_l_max: 0.12
+
+  strain_specific_calibration:
+    default_model: "Universal linear (if N < 2 strains)"
+    strain_model: "Individual OLS or GP per strain (if N ≥ 2)"
+    storage: "Model registry with versioning (MLflow or similar)"
+
+anomaly_detection:
+  methods:
+    - name: "Rate-of-change filter"
+      rule: "|dOD/dt| < max_growth_rate × 1.5 OR < min_growth_rate × 0.5"
+      action: "Flag; offer manual review"
+    - name: "Isolation Forest"
+      input_features: ["OD600", "dOD/dt", "d2OD/dt2", "temperature"]
+      contamination_fraction: 0.05
+      action: "High anomaly score → flag + notify analyst"
+    - name: "Exponential growth model residuals"
+      model: "OD(t) = OD0 × exp(μ × t)"
+      rule: "Residual > 3 × median_absolute_error"
+      action: "Potential culture contamination or equipment malfunction"
+
+  event_classification:
+    lag_phase:
+      description: "Initial slow growth period"
+      markers: "dOD/dt < 0.05 per hour"
+    exponential_phase:
+      description: "Balanced exponential growth"
+      markers: "dOD/dt consistent, residuals small"
+    stationary_phase:
+      description: "Growth rate = 0 (or negative)"
+      markers: "dOD/dt ≈ 0 for >1 hour"
+    death_phase:
+      description: "Viability declining"
+      markers: "OD600 stable but viability drops"
+
+model_deployment:
+  inference_endpoint:
+    input: "OD600 + metadata (strain, medium, time)"
+    output: "biomass_g_per_l, ci_lower, ci_upper, anomaly_flag"
+  versioning:
+    artifact: "Model weights + hyperparameters + training date"
+    container_digest: "SHA256 hash (for reproducibility)"
+    acceptance_test: "Benchmark set ≥3 strains; must pass before deployment"
+
+validation_lifecycle:
+  iq:
+    - "Plate reader or spectrophotometer calibration (per manufacturer)"
+    - "Temperature sensor validation"
+  oq:
+    - "Read positive & negative controls"
+    - "Verify telemetry delivery to storage"
+  pq:
+    - "Strain-specific calibration completed"
+    - "Model R² ≥ acceptance threshold"
+    - "Anomaly detection thresholds finalized"
+  ongoing:
+    - "Annual recalibration on fresh calibration set"
+    - "Drift detection (new data vs. old model)"
+    - "Retraining if drift > tolerance"
+
+ci_smoke_tests:
+  test_od_ingestion:
+    input: "Synthetic OD time-series (3 replicates, 20 time points)"
+    expected: "Data stored; no NaN/negative values; timestamps valid"
+    timeout_seconds: 10
+  test_model_prediction:
+    input: "OD600 = 1.2; strain = WT; medium = LB"
+    expected: "Biomass estimate + CI within expected range; anomaly_flag = false"
+    timeout_seconds: 5
+  test_anomaly_detection:
+    input: "OD time-series with simulated spike (outlier)"
+    expected: "Anomaly detected; flagged in output"
+    timeout_seconds: 10
+  test_phase_classification:
+    input: "OD time-series spanning 24 hours"
+    expected: "Lag → exponential → stationary phases correctly identified"
+    timeout_seconds: 10
+
+model_governance:
+  retraining_trigger:
+    - "Drift detection: new data mean vs. old model mean > 1 σ"
+    - "Quarterly review (if in active use)"
+    - "New strain added to portfolio"
+  retraining_pipeline:
+    input: "Accumulated calibration data (last 6 months)"
+    steps:
+      - "Combine with historical data"
+      - "Refit model; cross-validation"
+      - "Benchmark on hold-out set"
+      - "If better: version bump; update registry"
+      - "If worse: rollback; log reason"
+  audit_trail:
+    - Model ID, version, creation date
+    - Training dataset snapshot (metadata + summary stats)
+    - Hyperparameters
+    - Performance metrics (R², RMSE, on held-out set)
+    - Retraining events (date, trigger, outcome)
+
+examples:
+  time_series_sample:
+    plate_id: "P-2025-001"
+    well_id: "A1"
+    strain_id: "WT"
+    medium_type: "LB"
+    data_points:
+      - { timestamp: "2025-12-10T08:00:00Z", od600: 0.05, temperature_c: 37.0 }
+      - { timestamp: "2025-12-10T08:30:00Z", od600: 0.08, temperature_c: 37.1 }
+      - { timestamp: "2025-12-10T09:00:00Z", od600: 0.13, temperature_c: 37.0 }
+      # ... continuing through stationary phase
+
+  model_prediction:
+    od600: 1.5
+    strain_id: "WT"
+    medium_type: "LB"
+    model_version: "v1.2"
+    model_timestamp: "2025-11-01T00:00:00Z"
+    biomass_g_per_l_point: 1.85
+    biomass_g_per_l_ci_lower: 1.65
+    biomass_g_per_l_ci_upper: 2.08
+    confidence_level: 0.95
+    anomaly_flag: false
+    phase_estimate: "exponential"
+
+  calibration_summary:
+    strain_id: "WT"
+    medium_type: "LB"
+    n_replicates: 3
+    n_timepoints: 18
+    model_type: "linear_statistical"
+    parameters:
+      intercept: -0.05
+      slope: 1.23
+      intercept_ci: [-0.15, 0.05]
+      slope_ci: [1.18, 1.28]
+    goodness_of_fit:
+      r_squared: 0.942
+      rmse_g_per_l: 0.11
+      status: "pass (meets acceptance criteria)"

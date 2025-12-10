@@ -1,0 +1,217 @@
+---
+# Cell Sorter Integration Template v2
+# Supports: BD FACS Aria, Sony SH800S, Miltenyi MACSiMACS
+# Scope: Adapter configuration, operator flows, telemetry schema
+# Regulatory: FDA 21 CFR Part 11, Health Canada GMP compliant
+
+metadata:
+  version: "2.0"
+  last_updated: "2025-12-10"
+  regulatory_frameworks:
+    - "FDA 21 CFR Part 11"
+    - "Health Canada GMP"
+  data_integrity_principles:
+    - "ALCOA+ (Attributable, Legible, Contemporaneous, Original, Accurate, Complete, Consistent, Enduring, Available)"
+
+instrument_adapters:
+  bd_facs_aria:
+    manufacturer: "Becton Dickinson"
+    model: "FACSAria II"
+    connection_protocol: "OPC-UA / REST Gateway"
+    authentication:
+      type: "TLS 1.3 + token-based"
+      certificate_validation: true
+      refresh_token_expiry_minutes: 60
+    telemetry_endpoints:
+      - path: "/api/v1/sort/status"
+        method: "GET"
+        polling_interval_seconds: 5
+      - path: "/api/v1/sort/events"
+        method: "GET"
+        polling_interval_seconds: 1
+      - path: "/api/v1/sort/tube-position"
+        method: "GET"
+        polling_interval_seconds: 10
+    
+  sony_sh800s:
+    manufacturer: "Sony Biotechnology"
+    model: "SH800S Cell Sorter"
+    connection_protocol: "Proprietary SDK via REST wrapper"
+    authentication:
+      type: "API key + TLS"
+      key_rotation_days: 90
+    telemetry_endpoints:
+      - path: "/api/v1/sony/sort-status"
+        method: "GET"
+      - path: "/api/v1/sony/collection-tube-state"
+        method: "GET"
+
+  miltenyi_macsimacs:
+    manufacturer: "Miltenyi Biotec"
+    model: "MACSiMACS (magnetic sorting)"
+    connection_protocol: "OPC-UA over HTTPS"
+    authentication:
+      type: "Certificate-based"
+    telemetry_endpoints:
+      - path: "/api/v1/macs/sort-progress"
+        method: "GET"
+      - path: "/api/v1/macs/cell-recovery-estimate"
+        method: "GET"
+
+telemetry_schema:
+  sort_job:
+    id: "string (UUID)"
+    timestamp_start: "ISO8601"
+    timestamp_end: "ISO8601"
+    instrument_id: "string"
+    operator_id: "string (e-signature required)"
+    sort_parameters:
+      target_population: "string (e.g., 'CD4+ T cells')"
+      gating_strategy: "object (gates, thresholds, AND/OR logic)"
+      purity_target_percent: "number (0-100)"
+      recovery_target_percent: "number (0-100)"
+    sort_result:
+      total_events_acquired: "integer"
+      gated_events: "integer"
+      collected_events: "integer"
+      actual_purity_percent: "number"
+      actual_recovery_percent: "number"
+      confidence_interval_95: "object {lower: number, upper: number}"
+    tube_positions:
+      - position_id: "integer"
+        cell_count: "integer"
+        viability_percent: "number"
+        notes: "string"
+    instrument_events:
+      - event_type: "string (e.g., 'nozzle_jam', 'high_pressure_warning', 'sort_complete')"
+        severity: "enum [info, warning, error, critical]"
+        timestamp: "ISO8601"
+        description: "string"
+    audit_trail:
+      created_by: "string (user_id)"
+      created_at: "ISO8601"
+      modified_by: "string"
+      modified_at: "ISO8601"
+      version: "integer"
+
+operator_workflow:
+  pre_sort:
+    - step: 1
+      name: "Load Sample"
+      description: "Operator loads cell suspension into instrument input tube"
+      human_confirmation_required: true
+      validation_checks:
+        - "Sample volume sufficient (>500µL)"
+        - "Viability pre-sort >80%"
+        - "No clumps visible"
+    - step: 2
+      name: "Define Gating Strategy"
+      description: "Select or create gating strategy; preview expected population"
+      human_confirmation_required: true
+      policy_gates:
+        - name: "Biosafety check"
+          rule: "sort_target NOT IN restricted_organisms_list"
+        - name: "Export control"
+          rule: "sort_target NOT IN dual_use_pathogens"
+    - step: 3
+      name: "Set Sort Parameters"
+      description: "Target purity & recovery; configure collection tubes"
+      validation_threshold_warnings:
+        purity_achievable: "prediction_model(gating_strategy, sample_quality)"
+        recovery_achievable: "prediction_model(purity_target, instrument_calibration)"
+
+  during_sort:
+    - monitoring: "Real-time event stream; operator can pause/resume"
+      alert_conditions:
+        - condition: "nozzle_pressure > 25 psi"
+          action: "warn, offer pause"
+        - condition: "viability in sorted_tube < 70%"
+          action: "warn, log anomaly"
+      shadow_mode: "If enabled, second system logs decisions for audit"
+
+  post_sort:
+    - step: 1
+      name: "Collect Tubes"
+      description: "Remove collection tubes; record tube labels and positions"
+      human_confirmation_required: true
+    - step: 2
+      name: "QC Sampling"
+      description: "Optional: resample sorted population for viability & purity verification"
+      post_sort_analysis:
+        recount_method: "Hemocytometer or FACS re-analysis"
+        confidence_calculation: "Replicate SEM"
+    - step: 3
+      name: "Sign Off & Archive"
+      description: "E-signature on final sort report; archive telemetry"
+      e_signature_required: true
+      audit_trail_locked: true
+
+compliance_and_validation:
+  iq_oq_pq:
+    - phase: "IQ (Installation Qualification)"
+      checklist:
+        - "Instrument serial number & calibration certificate received"
+        - "Connectivity test (OPC-UA / REST gateway)"
+        - "Telemetry payload schema validation"
+    - phase: "OQ (Operational Qualification)"
+      checklist:
+        - "Gating strategy repository populated with SOPs"
+        - "Operator training records & e-signature logs functional"
+        - "Anomaly detection thresholds baseline established"
+    - phase: "PQ (Performance Qualification)"
+      checklist:
+        - "Benchmark sorts: known population (e.g., beads) ≥3 replicates"
+        - "Purity measured ±5% of expected"
+        - "Recovery measured ±10% of expected"
+        - "Telemetry complete & audit trail unbroken"
+
+  model_qualification:
+    purity_recovery_predictor:
+      model_version: "v1.2"
+      input_features:
+        - gating_strategy_complexity
+        - sample_pre_sort_viability
+        - target_population_abundance
+      acceptance_criteria:
+        mae_purity_percent: 3.5
+        mae_recovery_percent: 5.0
+      benchmark_dataset: "resources/datasets/synthetic-sort-benchmarks-100-runs.json"
+      revalidation_frequency_months: 6
+
+  export_control_policy:
+    restricted_organisms:
+      - "Bacillus anthracis"
+      - "Yersinia pestis"
+      - "Smallpox (MPXV, VARV)"
+    enforcement: "Every sort_target checked against this list; block + alert if match"
+
+examples:
+  sort_job_minimal:
+    id: "sort-20251210-001"
+    timestamp_start: "2025-12-10T09:00:00Z"
+    instrument_id: "BD-FACS-001"
+    operator_id: "op-alice-123"
+    sort_parameters:
+      target_population: "CD4+ T cells"
+      purity_target_percent: 95
+      recovery_target_percent: 80
+    sort_result:
+      total_events_acquired: 1000000
+      gated_events: 500000
+      collected_events: 450000
+      actual_purity_percent: 96.2
+      actual_recovery_percent: 82.1
+
+  gating_strategy_example:
+    name: "CD4+ T cell isolation"
+    gates:
+      - name: "Live"
+        parameter: "DAPI-A"
+        range: [0, 500]
+      - name: "Singlets"
+        parameter: "FSC-H vs FSC-W"
+        logic: "AND"
+      - name: "CD4+"
+        parameter: "CD4-PE-A"
+        range: [1000, 262144]
+    expected_yield_percent: 45
