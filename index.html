@@ -1,13 +1,183 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
   <title>NewGen Studio</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta
+    name="description"
+    content="NewGen Studio – AI-powered creative and development studio."
+  />
+  <link rel="stylesheet" href="/styles.css" />
 </head>
-<body style="font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:32px;">
-  <h1>NewGen Studio</h1>
-  <p>This is a temporary placeholder page served from Vercel.</p>
-  <p>Replace this file with your real site files when you're ready.</p>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="logo">NewGen Studio</div>
+      <nav class="nav">
+        <a href="#services">Services</a>
+        <a href="#about">About</a>
+        <a href="#work">Work</a>
+        <a href="#contact" class="btn btn-small">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-text">
+          <h1>AI-Native Studio for Modern Brands</h1>
+          <p>
+            NewGen Studio combines design, development, and AI to help you
+            launch products, automate workflows, and tell better stories.
+          </p>
+          <div class="hero-actions">
+            <a href="#contact" class="btn">Book a call</a>
+            <a href="#work" class="btn btn-ghost">View recent work</a>
+          </div>
+          <p class="hero-note">
+            From landing pages to full AI experiences — we help you ship faster.
+          </p>
+        </div>
+        <div class="hero-card">
+          <h2>What we build</h2>
+          <ul>
+            <li>⚡ AI-powered web experiences</li>
+            <li>🎨 Brand-first landing pages</li>
+            <li>🤖 Workflow & assistant prototypes</li>
+            <li>📈 Marketing experiments & funnels</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="services" class="section">
+      <div class="container">
+        <h2>Services</h2>
+        <div class="grid">
+          <article class="card">
+            <h3>Strategy & Discovery</h3>
+            <p>
+              Clarify your goals, audience, and positioning. We turn fuzzy ideas
+              into a concrete roadmap with quick wins.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Design & Prototyping</h3>
+            <p>
+              High-impact UX/UI and clickable prototypes so you can test
+              concepts before investing in full builds.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Build & Launch</h3>
+            <p>
+              Production-ready implementations on modern stacks, deployed on
+              Vercel with analytics and best practices baked in.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="section section-alt">
+      <div class="container two-column">
+        <div>
+          <h2>About NewGen Studio</h2>
+          <p>
+            We’re a small studio obsessed with getting things shipped. We mix
+            product thinking, design, and engineering with AI tools so you move
+            from idea to live experience quickly.
+          </p>
+          <p>
+            Whether you’re validating a new product, refreshing your brand, or
+            building an internal tool, we focus on outcomes — not deliverables.
+          </p>
+        </div>
+        <div class="card">
+          <h3>What it’s like to work with us</h3>
+          <ul>
+            <li>Short, focused engagements</li>
+            <li>Asynchronous updates, clear deadlines</li>
+            <li>Working prototypes early in the process</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="work" class="section">
+      <div class="container">
+        <h2>Sample Work</h2>
+        <p class="section-intro">
+          Add your real case studies or screenshots here. For now, this is just
+          a placeholder layout you can customize.
+        </p>
+        <div class="grid">
+          <article class="card card-muted">
+            <h3>AI Landing Page</h3>
+            <p>
+              High-converting landing page for an AI SaaS product, integrated
+              with analytics and A/B testing.
+            </p>
+          </article>
+          <article class="card card-muted">
+            <h3>Internal AI Assistant</h3>
+            <p>
+              Prototype assistant for support teams to summarize tickets and
+              suggest replies.
+            </p>
+          </article>
+          <article class="card card-muted">
+            <h3>Interactive Demo</h3>
+            <p>
+              Interactive product demo embedded on the marketing site to
+              increase engagement and trials.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="section section-alt">
+      <div class="container two-column">
+        <div>
+          <h2>Let’s build something</h2>
+          <p>
+            Ready to explore a project, or just want to sanity-check an idea?
+            Send a quick note and we’ll follow up with next steps.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Contact</h3>
+          <p>
+            Replace this block with your actual contact form or booking link.
+          </p>
+          <ul class="contact-list">
+            <li><strong>Email:</strong> hello@newgenaistudio.com</li>
+            <li><strong>Location:</strong> Remote / global</li>
+            <li><strong>Availability:</strong> Limited slots each month</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>© <span id="year"></span> NewGen Studio</span>
+      <span class="footer-links">
+        <a href="#top">Back to top</a>
+      </span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent =
+      new Date().getFullYear();
+  </script>
 </body>
 </html>
