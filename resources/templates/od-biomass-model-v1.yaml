@@ -1,4 +1,9 @@
 ---
+id: od-biomass-model-v1
+title: "OD → Biomass Calibration Model"
+domain_tags: [biomass, optical-density, calibration, analytics, fermentation]
+complexity: light
+
 # OD → Biomass Model v1
 # Calibrates optical density (OD600) measurements to biomass estimates
 # Scope: Time-series telemetry ingestion, statistical/surrogate models, anomaly detection

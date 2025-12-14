@@ -8,6 +8,10 @@ import graphs from './graphs.routes.js';
 import agents from './agents.routes.js';
 import biologics from './biologics.routes.js';
 import marketplace from './marketplace.routes.js';
+import platform from './platform.routes.js';
+import layouts from './layouts.routes.js';
+import apps from './apps.routes.js';
+import test from './test.routes.js';
 
 const router = express.Router();
 
@@ -19,6 +23,10 @@ router.use('/v1/graphs', graphs);
 router.use('/v1/agents', agents);
 router.use('/v1/biologics', biologics);
 router.use('/v1/plugins', marketplace);
+router.use('/v1/layouts', layouts);
+router.use('/apps', apps); // New staged generation endpoints
+router.use('/test', test); // Test endpoints for AI providers
+router.use('/platform', platform);
 router.use('/generate', generate);
 
 // Health check

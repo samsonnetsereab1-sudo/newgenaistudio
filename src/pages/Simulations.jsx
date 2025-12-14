@@ -106,27 +106,6 @@ export default function Simulations() {
     URL.revokeObjectURL(url);
   };
 
-  const handleParamChange = (e) => {
-    const { name, value } = e.target;
-    if (name.startsWith('param_')) {
-      const paramName = name.replace('param_', '');
-      setFormData((prev) => ({
-        ...prev,
-        params: {
-          ...prev.params,
-          [paramName]: parseFloat(value) || value
-        }
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: name === 'numSamples' || name === 'numRuns'
-          ? parseInt(value)
-          : value
-      }));
-    }
-  };
-
   return (
     <div className="space-y-6 p-6">
       {/* Header */}

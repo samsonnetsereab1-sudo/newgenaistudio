@@ -1,0 +1,275 @@
+/**
+ * Gemini Client for UI Generation
+ * Generates strict AppSpec JSON for NewGen Studio frontend
+ */
+
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+if (!process.env.GEMINI_API_KEY) {
+  console.warn('[Gemini] GEMINI_API_KEY not configured');
+}
+
+const genAI = process.env.GEMINI_API_KEY 
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  : null;
+
+/**
+ * System instruction for strict AppSpec generation
+ */
+const APPSPEC_SYSTEM_INSTRUCTION = `You are a UI specification generator for NewGen Studio.
+
+CRITICAL RULES:
+1. Output ONLY valid JSON - no prose, no markdown, no explanations
+2. Follow the EXACT AppSpec schema provided
+3. For sample management, include ALL required fields
+4. Use descriptive labels (e.g., "Create Sample" not "Button")
+5. Generate complete, functional UI components
+
+REQUIRED AppSpec structure:
+{
+  "version": "2.0",
+  "mode": "generated",
+  "metadata": {
+    "name": "App Name",
+    "description": "Brief description",
+    "domain": "biologics|pharma|clinical|generic",
+    "intentSummary": "What this app does"
+  },
+  "entities": [
+    {
+      "name": "EntityName",
+      "pluralName": "EntityNames",
+      "fields": [
+        {
+          "name": "fieldName",
+          "type": "string|number|date|enum|reference",
+          "required": true|false,
+          "enumValues": ["val1", "val2"]
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "page-dashboard",
+      "type": "dashboard",
+      "title": "Dashboard",
+      "entity": "EntityName",
+      "components": ["table-1", "button-1"]
+    },
+    {
+      "id": "page-create",
+      "type": "create",
+      "title": "Create Entity",
+      "entity": "EntityName",
+      "components": ["form-1"]
+    },
+    {
+      "id": "page-detail",
+      "type": "detail",
+      "title": "Entity Detail",
+      "entity": "EntityName",
+      "components": ["card-1"]
+    }
+  ],
+  "components": [
+    {
+      "id": "table-1",
+      "type": "table",
+      "props": {
+        "title": "Entity List",
+        "columns": ["field1", "field2", "field3"]
+      }
+    },
+    {
+      "id": "button-1",
+      "type": "button",
+      "props": {
+        "label": "Create Entity",
+        "variant": "primary"
+      }
+    },
+    {
+      "id": "form-1",
+      "type": "form",
+      "props": {
+        "title": "Create Entity",
+        "fields": [
+          {
+            "name": "field1",
+            "label": "Field 1",
+            "type": "string",
+            "required": true
+          }
+        ]
+      }
+    }
+  ],
+  "actions": [
+    {
+      "id": "action-create",
+      "type": "navigate",
+      "trigger": "onClick",
+      "target": "page-create"
+    },
+    {
+      "id": "action-view-detail",
+      "type": "navigate",
+      "trigger": "onRowClick",
+      "target": "page-detail"
+    }
+  ],
+  "dataSources": [
+    {
+      "id": "datasource-list",
+      "entity": "EntityName",
+      "query": "list"
+    }
+  ]
+}
+
+SAMPLE MANAGEMENT REQUIREMENTS:
+When prompt mentions "sample management" or "samples", the entities MUST include:
+
+Entity: Sample
+Fields:
+- sampleId (string, required)
+- batchLotId (string)
+- sampleType (enum: ["Blood", "Tissue", "Serum", "Plasma", "Other"])
+- dateReceived (date, required)
+- quantity (number)
+- unit (enum: ["mL", "mg", "units"])
+- storageTemp (enum: ["-80°C", "-20°C", "4°C", "RT"])
+- storageLocation (string)
+- status (enum: ["Received", "In Storage", "In Analysis", "Consumed"])
+
+Pages required:
+1. Dashboard with table showing all fields
+2. Create Sample form with all fields
+3. Sample Detail page
+
+NO analytics cards, NO generic buttons, NO placeholders.`;
+
+/**
+ * Generate AppSpec using Gemini
+ */
+export async function generateAppSpecWithGemini(prompt) {
+  if (!genAI) {
+    throw new Error('Gemini not configured. Set GEMINI_API_KEY in .env');
+  }
+
+  try {
+    console.log('[Gemini] Generating AppSpec for prompt:', prompt.substring(0, 100));
+
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-exp',
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 8192,
+        responseMimeType: 'application/json'
+      },
+      systemInstruction: APPSPEC_SYSTEM_INSTRUCTION
+    });
+
+    const result = await model.generateContent(`Generate a complete AppSpec for: ${prompt}`);
+    const response = result.response;
+    const text = response.text();
+
+    console.log('[Gemini] Raw response length:', text.length);
+
+    // Parse and validate JSON
+    let appSpec;
+    try {
+      appSpec = JSON.parse(text);
+    } catch (parseError) {
+      console.error('[Gemini] JSON parse error:', parseError.message);
+      console.error('[Gemini] Raw text:', text.substring(0, 500));
+      throw new Error('Gemini returned invalid JSON');
+    }
+
+    // Ensure required top-level fields
+    if (!appSpec.metadata) {
+      appSpec.metadata = {
+        name: 'Generated App',
+        description: 'Generated by Gemini',
+        domain: 'generic'
+      };
+    }
+
+    if (!appSpec.version) {
+      appSpec.version = '2.0';
+    }
+
+    if (!appSpec.mode) {
+      appSpec.mode = 'generated';
+    }
+
+    // Ensure arrays exist
+    appSpec.entities = appSpec.entities || [];
+    appSpec.pages = appSpec.pages || [];
+    appSpec.components = appSpec.components || [];
+    appSpec.actions = appSpec.actions || [];
+    appSpec.dataSources = appSpec.dataSources || [];
+    appSpec.workflows = appSpec.workflows || [];
+
+    console.log('[Gemini] Generated AppSpec with:');
+    console.log(`  - ${appSpec.entities.length} entities`);
+    console.log(`  - ${appSpec.pages.length} pages`);
+    console.log(`  - ${appSpec.components.length} components`);
+    console.log(`  - ${appSpec.actions.length} actions`);
+
+    return appSpec;
+
+  } catch (error) {
+    console.error('[Gemini] Generation error:', error.message);
+    throw new Error(`Gemini generation failed: ${error.message}`);
+  }
+}
+
+/**
+ * Refine existing AppSpec using Gemini
+ */
+export async function refineAppSpecWithGemini(currentSpec, instructions) {
+  if (!genAI) {
+    throw new Error('Gemini not configured. Set GEMINI_API_KEY in .env');
+  }
+
+  try {
+    console.log('[Gemini] Refining AppSpec with instructions:', instructions.substring(0, 100));
+
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-exp',
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 8192,
+        responseMimeType: 'application/json'
+      },
+      systemInstruction: `You are refining an existing AppSpec. Apply the user's changes surgically.
+
+Output ONLY the complete updated AppSpec JSON.
+Preserve all existing IDs and structure unless explicitly changing them.
+Only modify what the user requests.`
+    });
+
+    const prompt = `Current AppSpec:
+${JSON.stringify(currentSpec, null, 2)}
+
+User wants to: ${instructions}
+
+Return the complete updated AppSpec JSON.`;
+
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = response.text();
+
+    const refinedSpec = JSON.parse(text);
+    refinedSpec.mode = 'refined';
+
+    console.log('[Gemini] Refinement complete');
+    return refinedSpec;
+
+  } catch (error) {
+    console.error('[Gemini] Refinement error:', error.message);
+    throw new Error(`Gemini refinement failed: ${error.message}`);
+  }
+}

@@ -22,15 +22,59 @@ function BetaGate({ onUnlock }) {
     if (code.trim() === ACCESS_CODE) onUnlock(); else setError('Invalid access code.');
   };
   return (
-    <div className="beta-wrapper">
-      <div className="beta-card">
-        <div className="beta-logo-icon">NG</div>
-        <h1 className="beta-title">NewGen Studio</h1>
-        <p className="beta-subtitle">Private Beta Access</p>
+    <div style={{ 
+      height: '100vh', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      background: 'radial-gradient(circle at center, #EEF4FF 0%, #EDEAFF 100%)' 
+    }}>
+      <div style={{ 
+        background: '#ffffff', 
+        padding: '48px 40px', 
+        borderRadius: '24px', 
+        boxShadow: '0 20px 40px -10px rgba(97, 228, 197, 0.15)', 
+        width: '100%', 
+        maxWidth: '420px', 
+        textAlign: 'center' 
+      }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🚀</div>
+        <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#1e1b4b', margin: '0 0 8px' }}>NewGen Studio</h1>
+        <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 24px' }}>Private Beta Access</p>
         <form onSubmit={handleSubmit}>
-          <input className="beta-input" type="password" placeholder="Access Code" value={code} onChange={e => setCode(e.target.value)} autoFocus />
-          {error && <p className="beta-error">{error}</p>}
-          <button className="beta-button">Enter Studio</button>
+          <input 
+            style={{ 
+              width: '100%', 
+              padding: '14px', 
+              borderRadius: '12px', 
+              border: '1px solid #e2e8f0', 
+              margin: '16px 0', 
+              textAlign: 'center', 
+              fontSize: '16px' 
+            }}
+            type="password" 
+            placeholder="Enter Access Code" 
+            value={code} 
+            onChange={e => setCode(e.target.value)} 
+            autoFocus 
+          />
+          {error && <p style={{ color: '#ef4444', fontSize: '12px', margin: '8px 0' }}>{error}</p>}
+          <button 
+            type="submit"
+            style={{ 
+              width: '100%', 
+              background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', 
+              color: 'white', 
+              padding: '14px', 
+              borderRadius: '12px', 
+              fontWeight: '600', 
+              border: 'none', 
+              cursor: 'pointer', 
+              fontSize: '16px' 
+            }}
+          >
+            Enter Studio
+          </button>
         </form>
       </div>
     </div>
@@ -38,8 +82,10 @@ function BetaGate({ onUnlock }) {
 }
 
 export default function NewGenStudioApp() {
+  console.log('NewGenStudioApp mounted');
   const hasAccess = localStorage.getItem('ng_beta_access') === 'true';
   const [isAuthenticated, setIsAuthenticated] = useState(() => hasAccess);
+  console.log('isAuthenticated:', isAuthenticated);
 
   const handleUnlock = () => {
     localStorage.setItem('ng_beta_access', 'true');
@@ -51,7 +97,10 @@ export default function NewGenStudioApp() {
     setIsAuthenticated(false);
   };
 
+  console.log('Rendering routes, authenticated:', isAuthenticated);
+
   if (!isAuthenticated) {
+    console.log('Rendering beta gate');
     return (
       <Routes>
         <Route path="/gate" element={<BetaGate onUnlock={handleUnlock} />} />
@@ -60,6 +109,7 @@ export default function NewGenStudioApp() {
     );
   }
 
+  console.log('Rendering authenticated app');
   return (
     <Routes>
       <Route path="/" element={<AppShell onSignOut={handleSignOut} />}>

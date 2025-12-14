@@ -1,4 +1,9 @@
 ---
+id: gram-stain-classifier-v1
+title: "Gram Stain Classifier (CNN-based)"
+domain_tags: [imaging, classification, gram-stain, machine-learning, qc]
+complexity: medium
+
 # Gram Stain Classifier v1
 # CNN-based classification of Gram-positive vs Gram-negative staining
 # Scope: Slide image acquisition, preprocessing, classification, QC, localization

@@ -1,4 +1,9 @@
 ---
+id: total-protein-ms-pipeline-v1
+title: "Total Protein MS Quantification Pipeline"
+domain_tags: [proteomics, mass-spectrometry, quantification, dia, maxquant]
+complexity: power
+
 # Total Protein MS Pipeline v1
 # Quantifies total protein via mass spectrometry (DIA/label-free)
 # Scope: MaxQuant / DIA-NN integration, quantification, QC

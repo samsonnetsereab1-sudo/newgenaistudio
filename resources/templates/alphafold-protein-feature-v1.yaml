@@ -1,4 +1,9 @@
 ---
+id: alphafold-protein-feature-v1
+title: "AlphaFold Protein Feature Extraction"
+domain_tags: [structure-prediction, alphafold, computational, protein, feature-extraction]
+complexity: power
+
 # AlphaFold Protein Feature Extraction v1
 # Integrates AlphaFold/OpenFold predictions with assay design and QC
 # Scope: Structure prediction, feature extraction, integration with assay analytics
@@ -63,7 +68,7 @@ prediction_workflow:
         low_pae: "<5 Å (high confidence in relative domain orientation)"
         high_pae: ">10 Å (uncertain relative position)"
 
-step_4_feature_extraction:
+  step_4_feature_extraction:
     structural_descriptors:
       - descriptor: "Accessible Surface Area (ASA)"
         method: "DSSP or MDAnalysis"

@@ -1,4 +1,9 @@
 ---
+id: bpr-template-v1
+title: "Batch Production Record (BPR) Template"
+domain_tags: [compliance, batch-record, e-signature, fda, gmp, audit-trail]
+complexity: power
+
 # BPR (Batch Production Record) Template v1
 # Batch Production Record manifest with e-signature hooks and compliance scaffolding
 # Scope: FDA 21 CFR Part 11 style audit trail, e-signature capture, metadata
@@ -150,8 +155,8 @@ final_product:
         employee_id: "string"
       test_timestamp: "ISO8601"
       reference_standard_used: "string (lot & date)"
-    
-    overall_status: "enum [All Pass, Conditional Pass, Failed]"
+  
+  overall_status: "enum [All Pass, Conditional Pass, Failed]"
 
 stability_and_release:
   stability_plan:

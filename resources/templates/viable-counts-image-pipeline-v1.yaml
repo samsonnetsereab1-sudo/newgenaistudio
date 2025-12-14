@@ -1,4 +1,9 @@
 ---
+id: viable-counts-image-pipeline-v1
+title: "Viable Colony Counts (Imaging Analysis)"
+domain_tags: [imaging, colony-counting, cfu, qc, computational]
+complexity: light
+
 # Viable Counts Image Pipeline v1
 # Estimates CFU/mL from plate colony images
 # Scope: Image segmentation, colony detection, QC, statistical uncertainty

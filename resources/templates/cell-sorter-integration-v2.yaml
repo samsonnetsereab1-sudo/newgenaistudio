@@ -1,4 +1,9 @@
 ---
+id: cell-sorter-integration-v2
+title: "Cell Sorter Integration (FACS, Sony, Miltenyi)"
+domain_tags: [cell-sorting, flow-cytometry, instrument, integration, facs]
+complexity: medium
+
 # Cell Sorter Integration Template v2
 # Supports: BD FACS Aria, Sony SH800S, Miltenyi MACSiMACS
 # Scope: Adapter configuration, operator flows, telemetry schema

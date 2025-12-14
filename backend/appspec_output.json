@@ -1,0 +1,213 @@
+{
+  "status": "ok",
+  "layout": {
+    "id": "layout-fod4i7vh",
+    "name": "Biologics Dashboard",
+    "domain": "biologics",
+    "nodes": [
+      {
+        "id": "xnajlatp",
+        "type": "page",
+        "props": {
+          "title": "Biologics Operations"
+        },
+        "children": [
+          {
+            "id": "yndnmegc",
+            "type": "section",
+            "props": {
+              "title": "Pipeline Health"
+            },
+            "children": [
+              {
+                "id": "u13znet5",
+                "type": "card",
+                "props": {
+                  "title": "Active Assays",
+                  "body": "Track assay throughput and status."
+                }
+              },
+              {
+                "id": "qz9e8pd7",
+                "type": "card",
+                "props": {
+                  "title": "Success Rate",
+                  "body": "Quality and yield trends."
+                }
+              },
+              {
+                "id": "52tdhl18",
+                "type": "table",
+                "props": {
+                  "columns": [
+                    "Stage",
+                    "Owner",
+                    "Status"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "u5u095qj",
+            "type": "section",
+            "props": {
+              "title": "Analytics"
+            },
+            "children": [
+              {
+                "id": "wnd0vosp",
+                "type": "chart",
+                "props": {
+                  "kind": "bar"
+                }
+              },
+              {
+                "id": "kosu15kk",
+                "type": "text",
+                "props": {
+                  "value": "Generated from prompt: Create a GMP Sample Management application for a biologics lab.\n\nRequirements:\n-"
+                }
+              }
+            ]
+          },
+          {
+            "id": "ql3ermk6",
+            "type": "section",
+            "props": {
+              "title": "Actions"
+            },
+            "children": [
+              {
+                "id": "gauah54q",
+                "type": "button",
+                "props": {
+                  "label": "Sync LIMS",
+                  "variant": "primary"
+                }
+              },
+              {
+                "id": "q8ipists",
+                "type": "button",
+                "props": {
+                  "label": "Export Report",
+                  "variant": "ghost"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "schema": {
+    "id": "layout-fod4i7vh",
+    "name": "Biologics Dashboard",
+    "domain": "biologics",
+    "nodes": [
+      {
+        "id": "xnajlatp",
+        "type": "page",
+        "props": {
+          "title": "Biologics Operations"
+        },
+        "children": [
+          {
+            "id": "yndnmegc",
+            "type": "section",
+            "props": {
+              "title": "Pipeline Health"
+            },
+            "children": [
+              {
+                "id": "u13znet5",
+                "type": "card",
+                "props": {
+                  "title": "Active Assays",
+                  "body": "Track assay throughput and status."
+                }
+              },
+              {
+                "id": "qz9e8pd7",
+                "type": "card",
+                "props": {
+                  "title": "Success Rate",
+                  "body": "Quality and yield trends."
+                }
+              },
+              {
+                "id": "52tdhl18",
+                "type": "table",
+                "props": {
+                  "columns": [
+                    "Stage",
+                    "Owner",
+                    "Status"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "u5u095qj",
+            "type": "section",
+            "props": {
+              "title": "Analytics"
+            },
+            "children": [
+              {
+                "id": "wnd0vosp",
+                "type": "chart",
+                "props": {
+                  "kind": "bar"
+                }
+              },
+              {
+                "id": "kosu15kk",
+                "type": "text",
+                "props": {
+                  "value": "Generated from prompt: Create a GMP Sample Management application for a biologics lab.\n\nRequirements:\n-"
+                }
+              }
+            ]
+          },
+          {
+            "id": "ql3ermk6",
+            "type": "section",
+            "props": {
+              "title": "Actions"
+            },
+            "children": [
+              {
+                "id": "gauah54q",
+                "type": "button",
+                "props": {
+                  "label": "Sync LIMS",
+                  "variant": "primary"
+                }
+              },
+              {
+                "id": "q8ipists",
+                "type": "button",
+                "props": {
+                  "label": "Export Report",
+                  "variant": "ghost"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "files": {
+    "App.jsx": "import React, { useState } from \"react\";\nimport { FlaskConical, Microscope, TrendingUp, Database, Activity, FileBarChart } from \"lucide-react\";\n\nexport default function App() {\n  const [activeTab, setActiveTab] = useState('overview');\n  \n  return (\n    <div className=\"min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100\">\n      {/* Header */}\n      <header className=\"bg-white shadow-sm border-b border-slate-200\">\n        <div className=\"max-w-7xl mx-auto px-6 py-4 flex items-center justify-between\">\n          <div className=\"flex items-center gap-3\">\n            <FlaskConical className=\"text-indigo-600\" size={28} />\n            <h1 className=\"text-2xl font-bold text-slate-800\">Biologics Dashboard</h1>\n          </div>\n          <div className=\"text-sm text-slate-600\">NewGen Studio • Pharma Edition</div>\n        </div>\n      </header>\n\n      {/* Navigation Tabs */}\n      <nav className=\"bg-white border-b border-slate-200\">\n        <div className=\"max-w-7xl mx-auto px-6 flex gap-1\">\n          {['overview', 'pipeline', 'analytics', 'data'].map(tab => (\n            <button\n              key={tab}\n              onClick={() => setActiveTab(tab)}\n              className={`px-4 py-3 text-sm font-medium capitalize transition-colors ${activeTab === tab ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-600 hover:text-slate-900'}`}\n            >\n              {tab}\n            </button>\n          ))}\n        </div>\n      </nav>\n\n      {/* Main Content */}\n      <main className=\"max-w-7xl mx-auto px-6 py-8\">\n        <div className=\"grid grid-cols-1 md:grid-cols-3 gap-6\">\n          {/* Card 1: Active Assays */}\n          <div className=\"bg-white rounded-lg shadow-md p-6 border border-slate-200 hover:shadow-lg transition-shadow\">\n            <div className=\"flex items-center gap-3 mb-4\">\n              <div className=\"p-2 bg-blue-100 rounded-lg\">\n                <Microscope className=\"text-blue-600\" size={24} />\n              </div>\n              <h3 className=\"text-lg font-semibold text-slate-800\">Active Assays</h3>\n            </div>\n            <p className=\"text-3xl font-bold text-slate-900\">24</p>\n            <p className=\"text-sm text-slate-600 mt-2\">+3 from last week</p>\n          </div>\n\n          {/* Card 2: Success Rate */}\n          <div className=\"bg-white rounded-lg shadow-md p-6 border border-slate-200 hover:shadow-lg transition-shadow\">\n            <div className=\"flex items-center gap-3 mb-4\">\n              <div className=\"p-2 bg-green-100 rounded-lg\">\n                <TrendingUp className=\"text-green-600\" size={24} />\n              </div>\n              <h3 className=\"text-lg font-semibold text-slate-800\">Success Rate</h3>\n            </div>\n            <p className=\"text-3xl font-bold text-slate-900\">89%</p>\n            <p className=\"text-sm text-slate-600 mt-2\">Above target threshold</p>\n          </div>\n\n          {/* Card 3: Datasets */}\n          <div className=\"bg-white rounded-lg shadow-md p-6 border border-slate-200 hover:shadow-lg transition-shadow\">\n            <div className=\"flex items-center gap-3 mb-4\">\n              <div className=\"p-2 bg-purple-100 rounded-lg\">\n                <Database className=\"text-purple-600\" size={24} />\n              </div>\n              <h3 className=\"text-lg font-semibold text-slate-800\">Datasets</h3>\n            </div>\n            <p className=\"text-3xl font-bold text-slate-900\">156</p>\n            <p className=\"text-sm text-slate-600 mt-2\">Ready for analysis</p>\n          </div>\n        </div>\n\n        {/* Pipeline Status */}\n        <div className=\"mt-8 bg-white rounded-lg shadow-md p-6 border border-slate-200\">\n          <h3 className=\"text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2\">\n            <Activity className=\"text-indigo-600\" size={20} />\n            Pipeline Status\n          </h3>\n          <div className=\"space-y-3\">\n            {['Protein Purification', 'Mass Spectrometry', 'Quality Control'].map((stage, idx) => (\n              <div key={stage} className=\"flex items-center justify-between p-3 bg-slate-50 rounded-lg\">\n                <span className=\"text-sm font-medium text-slate-700\">{stage}</span>\n                <span className=\"text-xs px-3 py-1 rounded-full bg-green-100 text-green-700\">\n                  {idx === 0 ? 'In Progress' : idx === 1 ? 'Pending' : 'Scheduled'}\n                </span>\n              </div>\n            ))}\n          </div>\n        </div>\n\n        {/* Prompt Display */}\n        <div className=\"mt-8 bg-white rounded-lg shadow-md p-6 border border-slate-200\">\n          <h3 className=\"text-lg font-semibold text-slate-800 mb-3 flex items-center gap-2\">\n            <FileBarChart className=\"text-slate-600\" size={20} />\n            Generated from Prompt\n          </h3>\n          <pre className=\"text-sm bg-slate-900 text-slate-100 p-4 rounded-lg overflow-auto\">{prompt}</pre>\n        </div>\n      </main>\n    </div>\n  );\n}",
+    "styles.css": "body { margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }\n* { box-sizing: border-box; }\n.lucide { display: inline-block; }"
+  },
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "✅ Generated biologics-specific dashboard with pipeline metrics, assay tracking, and data management."
+    }
+  ]
+}

@@ -1,4 +1,9 @@
 ---
+id: cell-lysis-detection-v1
+title: "Cell Lysis Detection (Imaging & Flow)"
+domain_tags: [imaging, flow-cytometry, cell-lysis, qc, computational]
+complexity: medium
+
 # Cell Lysis Detection v1
 # Detects cell lysis via imaging (membrane integrity stains) and flow cytometry
 # Scope: Computational detection from imaging & flow signatures; no procedural instructions

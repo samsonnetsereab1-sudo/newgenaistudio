@@ -1,0 +1,388 @@
+{
+  "version": "1.0.0",
+  "source": "newgen-studio",
+  "exportId": "exp_20251210_plugin_marketplace",
+  "timestamp": "2025-12-10T12:34:56.000Z",
+
+  "project": {
+    "id": "proj_plugin_marketplace_01",
+    "name": "NewGen Plugin Marketplace",
+    "domain": "biologics",
+    "type": "studio-app",
+    "tags": ["plugins", "marketplace", "ai-builder"],
+    "description": "Marketplace of scientifically validated plugins for biologics research.",
+    "domainMeta": {
+      "moleculeType": "protein",
+      "phase": "discovery",
+      "therapeuticArea": "immunology",
+      "regulatoryContext": "non-GLP research"
+    }
+  },
+
+  "layout": {
+    "rootRoute": "plugins",
+    "routes": [
+      {
+        "id": "route_plugins",
+        "path": "/plugins",
+        "title": "Plugin Marketplace",
+        "layout": "app-shell-left-nav",
+        "navGroup": "main",
+        "icon": "plug",
+        "pageComponentId": "page_plugins"
+      }
+    ],
+    "components": [
+      {
+        "id": "page_plugins",
+        "type": "Page",
+        "props": {
+          "title": "Plugin Marketplace",
+          "subtitle": "Discover scientifically-validated plugins for biologics research"
+        },
+        "children": [
+          "cmp_plugins_filters",
+          "cmp_plugins_list"
+        ]
+      },
+      {
+        "id": "cmp_plugins_filters",
+        "type": "HorizontalFilterBar",
+        "props": {
+          "searchPlaceholder": "Search plugins by name or keyword",
+          "filters": [
+            {
+              "id": "category",
+              "label": "All Categories",
+              "type": "select",
+              "optionsDataSourceId": "ds_plugin_categories"
+            },
+            {
+              "id": "license",
+              "label": "All Licenses",
+              "type": "select",
+              "options": [
+                { "value": "all", "label": "All Licenses" },
+                { "value": "free", "label": "Free" },
+                { "value": "commercial", "label": "Commercial" }
+              ]
+            }
+          ]
+        },
+        "bindings": {
+          "onChange": "action_updatePluginFilters"
+        }
+      },
+      {
+        "id": "cmp_plugins_list",
+        "type": "CardList",
+        "props": {
+          "title": "Plugins",
+          "emptyState": {
+            "title": "No plugins found",
+            "body": "Try adjusting your search or filters."
+          }
+        },
+        "bindings": {
+          "items": "ds_plugins.data.items"
+        },
+        "itemTemplate": "cmp_plugin_card"
+      },
+      {
+        "id": "cmp_plugin_card",
+        "type": "Card",
+        "slots": {
+          "header": {
+            "type": "Text",
+            "bindings": {
+              "text": "item.name"
+            }
+          },
+          "tagline": {
+            "type": "Text",
+            "bindings": {
+              "text": "item.tagline"
+            }
+          },
+          "meta": {
+            "type": "InlineMeta",
+            "bindings": {
+              "left": "item.provider",
+              "right": "item.category"
+            }
+          },
+          "badges": {
+            "type": "BadgeRow",
+            "bindings": {
+              "items": "item.badges"
+            }
+          },
+          "footer": {
+            "type": "ButtonRow",
+            "props": {
+              "primaryLabel": "View details"
+            },
+            "bindings": {
+              "onPrimaryClick": "action_openPluginDetails"
+            }
+          }
+        }
+      }
+    ]
+  },
+
+  "dataSources": [
+    {
+      "id": "ds_plugins",
+      "type": "http",
+      "label": "Plugin catalog",
+      "config": {
+        "method": "GET",
+        "url": "/api/v1/plugins",
+        "queryParams": {
+          "q": "{{state.search}}",
+          "category": "{{state.filters.category}}",
+          "license": "{{state.filters.license}}"
+        }
+      },
+      "schema": {
+        "itemsPath": "data.items",
+        "fields": {
+          "id": "string",
+          "name": "string",
+          "tagline": "string",
+          "provider": "string",
+          "category": "string",
+          "badges": "array",
+          "description": "string",
+          "icon": "string",
+          "featured": "boolean"
+        }
+      },
+      "refresh": {
+        "onInit": true,
+        "onFilterChange": true
+      }
+    },
+    {
+      "id": "ds_plugin_categories",
+      "type": "static",
+      "label": "Plugin categories",
+      "config": {
+        "items": [
+          { "value": "all", "label": "All Categories" },
+          { "value": "structure", "label": "Structure Prediction" },
+          { "value": "simulation", "label": "Simulation" },
+          { "value": "qc", "label": "QC & Analytics" },
+          { "value": "sequencing", "label": "Sequencing" },
+          { "value": "imaging", "label": "Imaging" }
+        ]
+      }
+    }
+  ],
+
+  "actions": [
+    {
+      "id": "action_updatePluginFilters",
+      "type": "state.update",
+      "label": "Update plugin filters",
+      "config": {
+        "targetStatePath": "filters",
+        "merge": true
+      },
+      "sideEffects": [
+        {
+          "type": "datasource.refresh",
+          "dataSourceId": "ds_plugins"
+        }
+      ]
+    },
+    {
+      "id": "action_openPluginDetails",
+      "type": "navigation.openModal",
+      "label": "Open plugin details modal",
+      "config": {
+        "routeId": "route_plugins",
+        "modalComponentId": "cmp_plugin_details_modal",
+        "payload": "{{item}}"
+      }
+    },
+    {
+      "id": "action_installPlugin",
+      "type": "api.call",
+      "label": "Install a plugin",
+      "config": {
+        "method": "POST",
+        "url": "/api/v1/plugins/install",
+        "body": "{{item}}"
+      },
+      "sideEffects": [
+        {
+          "type": "notification.show",
+          "message": "Plugin installed successfully!"
+        },
+        {
+          "type": "datasource.refresh",
+          "dataSourceId": "ds_plugins"
+        }
+      ]
+    }
+  ],
+
+  "permissions": [
+    {
+      "role": "viewer",
+      "description": "Can browse the plugin marketplace",
+      "routes": ["route_plugins"],
+      "actions": []
+    },
+    {
+      "role": "researcher",
+      "description": "Can browse plugins and install them",
+      "routes": ["route_plugins"],
+      "actions": ["action_updatePluginFilters", "action_openPluginDetails", "action_installPlugin"]
+    },
+    {
+      "role": "admin",
+      "description": "Can manage plugins and integrations",
+      "routes": ["route_plugins"],
+      "actions": ["action_updatePluginFilters", "action_openPluginDetails", "action_installPlugin"]
+    }
+  ],
+
+  "theme": {
+    "preset": "newgen-light",
+    "colors": {
+      "primary": "#7C3AED",
+      "primarySoft": "#F3E8FF",
+      "primaryDark": "#6D28D9",
+      "background": "#F8FAFC",
+      "surface": "#FFFFFF",
+      "surfaceAlt": "#F1F5F9",
+      "textPrimary": "#0F172A",
+      "textSecondary": "#64748B",
+      "textTertiary": "#94A3B8",
+      "border": "#E2E8F0",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "error": "#EF4444",
+      "info": "#3B82F6"
+    },
+    "typography": {
+      "fontFamily": "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "headingWeight": 700,
+      "bodyWeight": 400,
+      "sizes": {
+        "xs": "12px",
+        "sm": "14px",
+        "base": "16px",
+        "lg": "18px",
+        "xl": "20px",
+        "2xl": "24px"
+      }
+    },
+    "radius": {
+      "none": "0px",
+      "sm": "4px",
+      "base": "12px",
+      "lg": "16px",
+      "xl": "24px",
+      "pill": "999px"
+    },
+    "shadows": {
+      "none": "none",
+      "sm": "0 1px 2px 0 rgba(15, 23, 42, 0.05)",
+      "base": "0 1px 3px 0 rgba(15, 23, 42, 0.1), 0 1px 2px 0 rgba(15, 23, 42, 0.06)",
+      "card": "0 10px 30px -10px rgba(15, 23, 42, 0.12)",
+      "lg": "0 20px 50px -20px rgba(15, 23, 42, 0.15)",
+      "xl": "0 25px 60px -25px rgba(15, 23, 42, 0.20)"
+    },
+    "spacing": {
+      "xs": "4px",
+      "sm": "8px",
+      "base": "16px",
+      "lg": "24px",
+      "xl": "32px"
+    }
+  },
+
+  "deployment": {
+    "target": "base44",
+    "env": "staging",
+    "dependencies": [
+      {
+        "type": "api",
+        "name": "newgen-backend",
+        "url": "https://api.newgen.local/api",
+        "description": "NewGen Studio backend (plugins API and orchestration)",
+        "methods": ["GET", "POST", "PATCH"],
+        "endpoints": [
+          "/v1/plugins",
+          "/v1/plugins/:id",
+          "/v1/plugins/install"
+        ]
+      },
+      {
+        "type": "service",
+        "name": "plugin-store",
+        "url": "https://plugins.newgen.local",
+        "description": "Central plugin distribution service"
+      }
+    ],
+    "notes": [
+      "This is a biologics/pharma domain application.",
+      "Ensure compliance with relevant regulatory requirements.",
+      "Regulatory context: non-GLP research",
+      "",
+      "API Configuration:",
+      "- Expose `/api/v1/plugins` from NewGen backend to the Base44 environment.",
+      "- Configure CORS to allow requests from Base44 domain.",
+      "",
+      "Layout Mapping:",
+      "- Map `app-shell-left-nav` layout to Base44's standard left-nav shell.",
+      "- Use the sidebar for primary navigation.",
+      "",
+      "Theme & Styling:",
+      "- Use `newgen-light` theme preset.",
+      "- Primary color: #7C3AED (Purple)",
+      "- Adapt colors to your design system if needed.",
+      "",
+      "Data Sources:",
+      "- All data sources require authentication tokens.",
+      "- Implement query parameter binding for filters and search.",
+      "",
+      "Testing:",
+      "1. Test the plugin list endpoint: GET /api/v1/plugins",
+      "2. Verify filter and search functionality.",
+      "3. Test install action with a test plugin.",
+      "4. Validate modal opens with plugin details.",
+      "",
+      "Deployment Steps:",
+      "1. Configure environment variables (API endpoint, auth tokens).",
+      "2. Set up CORS in Base44 workspace.",
+      "3. Deploy the manifest.",
+      "4. Run integration tests.",
+      "5. Monitor logs for errors."
+    ],
+    "configVariables": [
+      {
+        "name": "API_ENDPOINT",
+        "type": "string",
+        "description": "NewGen backend API URL",
+        "example": "https://api.newgen.local/api"
+      },
+      {
+        "name": "AUTH_TOKEN",
+        "type": "secret",
+        "description": "API authentication token",
+        "example": "bearer_token_..."
+      },
+      {
+        "name": "PLUGIN_STORE_URL",
+        "type": "string",
+        "description": "Plugin store domain",
+        "example": "https://plugins.newgen.local"
+      }
+    ]
+  }
+}
