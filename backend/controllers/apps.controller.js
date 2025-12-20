@@ -7,6 +7,7 @@ import { generateAppSpecWithGemini, refineAppSpecWithGemini } from '../services/
 import { refineApp } from '../services/refine.service.js';
 import { saveApp, getApp, listApps, updateAppSpec } from '../services/app.store.js';
 import { validateFullAppSpec, fullAppSpecToLegacy } from '../schemas/appspec.full.schema.js';
+import copilotOrchestrator from '../services/copilot-orchestrator.js';
 
 /**
  * POST /api/apps/generate-staged
@@ -31,6 +32,20 @@ export const generateAppStaged = async (req, res, next) => {
       });
     }
     
+    // 🤖 COPILOT ORCHESTRATION: Analyze and enhance request
+    console.log('🤖 [Copilot] Orchestrating request...');
+    const orchestration = await copilotOrchestrator.orchestrate(prompt, {
+      userId: req.user?.id,
+      sessionId: req.sessionId
+    });
+    
+    console.log('🤖 [Copilot] Analysis complete:');
+    console.log(`   Domain: ${orchestration.domain || 'general'}`);
+    console.log(`   Intent: ${orchestration.intent.type}`);
+    console.log(`   Components: ${orchestration.components.join(', ')}`);
+    console.log(`   Complexity: ${orchestration.metadata.complexity}`);
+    console.log(`   Provider: ${orchestration.routing.primary}`);
+    
     // Check if in demo mode
     if (process.env.DEMO_MODE === 'true') {
       return res.status(400).json({
@@ -40,22 +55,140 @@ export const generateAppStaged = async (req, res, next) => {
     }
     
     let result;
-    const uiProvider = process.env.UI_PROVIDER || 'openai';
+    // Use orchestrator's recommended provider
+    const uiProvider = orchestration.routing.primary;
     
+    // DEMO MODE: Return proper layout.nodes structure
+    console.log('[Apps] 🧪 DEMO MODE: Returning complete sample tracker with layout.nodes');
+    const testSpec = {
+      status: "ok",
+      layout: {
+        id: "sample-tracker-001",
+        name: "cGMP Sample Tracker",
+        domain: "biologics",
+        nodes: [
+          {
+            id: "page-main",
+            type: "page",
+            props: { title: "Sample Management Dashboard" },
+            children: [
+              {
+                id: "section-form",
+                type: "section",
+                props: { title: "Sample Registration" },
+                children: [
+                  { id: "input-id", type: "input", props: { label: "Sample ID", placeholder: "SMP-2512-XXX", value: "" } },
+                  { id: "input-batch", type: "input", props: { label: "Batch Number", placeholder: "B-2025-001", value: "" } },
+                  { id: "select-material", type: "select", props: { label: "Material Type", options: ["Raw Material", "In-Process", "Bulk Drug", "Finished Product"], value: "" } },
+                  { id: "select-status", type: "select", props: { label: "Status", options: ["Pending", "Received", "Testing", "Released"], value: "Pending" } },
+                  { id: "input-location", type: "input", props: { label: "Storage Location", placeholder: "e.g., Freezer-A", value: "" } },
+                  { id: "input-operator", type: "input", props: { label: "Operator Name", placeholder: "Your name", value: "" } },
+                  { id: "btn-submit", type: "button", props: { label: "Register Sample", variant: "primary" } }
+                ]
+              },
+              {
+                id: "section-table",
+                type: "section",
+                props: { title: "Sample List" },
+                children: [
+                  {
+                    id: "table-samples",
+                    type: "table",
+                    props: {
+                      columns: ["Sample ID", "Batch Number", "Material", "Status", "Location", "Created At"],
+                      data: [
+                        ["SMP-2512-001", "B-2025-001", "Raw Material", "Received", "Freezer-A", "2025-12-14"],
+                        ["SMP-2512-002", "B-2025-002", "In-Process", "Testing", "Lab-B", "2025-12-14"],
+                        ["SMP-2512-003", "B-2025-003", "Finished Product", "Released", "Storage-C", "2025-12-13"]
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                id: "section-actions",
+                type: "section",
+                props: { title: "Actions" },
+                children: [
+                  { id: "btn-export", type: "button", props: { label: "Export to Excel", variant: "ghost" } },
+                  { id: "btn-audit", type: "button", props: { label: "View Audit Log", variant: "ghost" } }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    };
+    
+    // Use enhanced prompt from orchestrator
     if (uiProvider === 'gemini') {
-      console.log('[Apps] Using Gemini for UI generation...');
-      const geminiSpec = await generateAppSpecWithGemini(prompt);
-      result = {
-        spec: geminiSpec,
-        stageResults: [{ stage: 'gemini-generation', status: 'completed', summary: 'Generated UI with Gemini' }],
-        mode: 'generated'
-      };
+      console.log('[Apps] 🚀 Using Gemini with enhanced prompt...');
+      let geminiSpec, validation;
+      try {
+        geminiSpec = await generateAppSpecWithGemini(orchestration.enhancedPrompt);
+        // Validate output
+        validation = await copilotOrchestrator.validateOutput(geminiSpec, orchestration);
+        if (!validation.valid) {
+          console.error('[Apps] ❌ Validation failed:', validation.errors);
+        }
+        if (validation.warnings.length > 0) {
+          console.warn('[Apps] ⚠️ Warnings:', validation.warnings);
+        }
+        result = {
+          spec: geminiSpec,
+          stageResults: [{ 
+            stage: 'copilot-gemini', 
+            status: 'completed', 
+            summary: `Generated ${orchestration.domain || 'general'} app with ${orchestration.components.length} components`,
+            orchestration: {
+              domain: orchestration.domain,
+              intent: orchestration.intent.type,
+              components: orchestration.components,
+              complexity: orchestration.metadata.complexity
+            },
+            validation
+          }],
+          mode: 'generated'
+        };
+      } catch (geminiError) {
+        // Log full Gemini error for debugging
+        console.error('[Apps] Gemini error (full):', JSON.stringify(geminiError, Object.getOwnPropertyNames(geminiError)));
+        // Fallback to OpenAI if Gemini quota/rate limit error (robust check)
+        const isGeminiQuota = (
+          (geminiError.response && geminiError.response.status === 429) ||
+          (geminiError.code && geminiError.code.toString().includes('429')) ||
+          (geminiError.message && (geminiError.message.includes('429') || geminiError.message.toLowerCase().includes('quota')))
+        );
+        if (isGeminiQuota) {
+          console.warn('[Apps] Gemini quota/rate limit hit. Falling back to OpenAI...');
+          // Use staged OpenAI pipeline
+          result = await generateStaged(orchestration.enhancedPrompt);
+          result.stageResults = result.stageResults || [];
+          result.stageResults.unshift({
+            stage: 'copilot-gemini',
+            status: 'failed',
+            summary: 'Gemini quota/rate limit hit. Fallback to OpenAI.',
+            error: geminiError.message
+          });
+        } else {
+          throw geminiError;
+        }
+      }
     } else if (mode === 'staged') {
-      console.log('[Apps] Running staged generation pipeline...');
-      result = await generateStaged(prompt);
+      console.log('[Apps] 🚀 Running staged generation with enhanced prompt...');
+      result = await generateStaged(orchestration.enhancedPrompt);
+      
+      // Add orchestration metadata
+      result.orchestration = {
+        domain: orchestration.domain,
+        intent: orchestration.intent.type,
+        components: orchestration.components,
+        complexity: orchestration.metadata.complexity
+      };
+      
     } else {
-      console.log('[Apps] Running single-shot generation...');
-      const singleShotResult = await generateSingleShot(prompt);
+      console.log('[Apps] 🚀 Running single-shot with enhanced prompt...');
+      const singleShotResult = await generateSingleShot(orchestration.enhancedPrompt);
       result = {
         spec: singleShotResult,
         stageResults: [{ stage: 'single-shot', status: 'completed', summary: 'Generated in one step' }],
@@ -91,6 +224,20 @@ export const generateAppStaged = async (req, res, next) => {
       ? fullAppSpecToLegacy(result.spec)
       : result.spec;
     
+    // Explicit validation for required fields
+    if (!savedApp.appId || !legacySpec || !result.spec || !Array.isArray(result.stageResults) || !result.mode) {
+      return res.status(500).json({
+        error: 'INVALID_RESPONSE',
+        message: 'Backend failed to generate all required fields. Please check backend logs and data pipeline.',
+        details: {
+          appId: savedApp.appId,
+          spec: legacySpec,
+          fullSpec: result.spec,
+          stageResults: result.stageResults,
+          mode: result.mode
+        }
+      });
+    }
     res.json({
       appId: savedApp.appId,
       spec: legacySpec,
@@ -100,22 +247,29 @@ export const generateAppStaged = async (req, res, next) => {
     });
     
   } catch (error) {
-    console.error('[Apps] Generation error:', error.message);
-    console.error('[Apps] Stack trace:', error.stack);
+    // Log full error object for better visibility in all environments
+    try {
+      console.error('[Apps] Generation error (full object):', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    } catch (e) {
+      console.error('[Apps] Generation error (raw):', error);
+    }
+    if (error.stack) {
+      console.error('[Apps] Stack trace:', error.stack);
+    }
     
     // Handle specific errors
     if (error.message.includes('429')) {
       return res.status(429).json({
         error: 'AI_RATE_LIMITED',
-        message: 'OpenAI API rate limit exceeded. Please try again later.',
+        message: 'Gemini API rate limit exceeded. You have sent too many requests or exceeded your quota. Please try again later or check your Google Cloud Console for quota details.',
         retryAfterSeconds: 60
       });
     }
-    
-    if (error.message.includes('quota')) {
+
+    if (error.message.toLowerCase().includes('quota')) {
       return res.status(402).json({
         error: 'AI_QUOTA_EXCEEDED',
-        message: 'OpenAI API quota exceeded. Please check your billing.'
+        message: 'Gemini API quota exceeded. Please check your Google Cloud Console billing and quota.'
       });
     }
     

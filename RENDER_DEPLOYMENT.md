@@ -32,9 +32,9 @@ git push -u origin main
 In Render Dashboard → Your Service → Environment:
 
 **Required:**
-- `OPENAI_API_KEY`: `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`
-- `GEMINI_API_KEY`: `AIzaSyDSk0tKfpg5m8Xve8LdHrRBpnLy0__xG-c`
-- `MONGODB_URI`: `reabi_db_user:sam1973@cluster0.adgjxqu.mongodb.net/?appName=Cluster0`
+- `OPENAI_API_KEY`: `sk-...` (create in OpenAI dashboard; add only in Render env settings)
+- `GEMINI_API_KEY`: `AIza...` (Gemini key stored in Render env settings)
+- `MONGODB_URI`: `mongodb+srv://<user>:<password>@<cluster-url>/<db>?retryWrites=true&w=majority`
 
 **Optional:**
 - `UI_PROVIDER`: `openai` (or `gemini`)

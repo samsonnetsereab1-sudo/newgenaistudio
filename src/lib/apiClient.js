@@ -4,7 +4,7 @@ import axios from "axios";
 const apiClient = axios.create({
   // Point this at your backend. Adjust the port if needed.
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:4000",
-  timeout: 30000, // Increased for AI generation
+  timeout: 45000, // 45s frontend timeout (backend decides to respond within 30s)
 });
 
 // optional: simple logging

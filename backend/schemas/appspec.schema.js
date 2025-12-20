@@ -131,18 +131,15 @@ export function normalizeToAppSpec(rawOutput) {
  * This is the bridge between backend AppSpec and frontend expectations
  */
 export function appSpecToFrontend(spec) {
-  const validation = validateAppSpec(spec);
-  
-  if (!validation.valid) {
-    throw new Error(`Invalid AppSpec: ${validation.errors.join(', ')}`);
-  }
+  // No validation here - let controller handle it
+  // This is just a format converter
   
   return {
     status: spec.status,
     children: spec.layout.nodes, // Frontend expects 'children' not 'nodes'
     meta: {
       version: spec.version,
-      domain: spec.domain,
+      domain: spec.layout?.domain,
       files: spec.files,
       messages: spec.messages,
       schema: spec.schema

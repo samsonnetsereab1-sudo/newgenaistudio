@@ -1,0 +1,222 @@
+{
+  "version": "2.0",
+  "mode": "generated",
+  "metadata": {
+    "name": "Sample Tracker",
+    "description": "Laboratory sample management system",
+    "domain": "biologics",
+    "intentSummary": "Track samples through creation, storage, and testing"
+  },
+  "entities": [
+    {
+      "name": "Sample",
+      "pluralName": "Samples",
+      "fields": [
+        {
+          "name": "sampleId",
+          "type": "string",
+          "required": true,
+          "label": "Sample ID"
+        },
+        {
+          "name": "batchNumber",
+          "type": "string",
+          "required": true,
+          "label": "Batch Number"
+        },
+        {
+          "name": "material",
+          "type": "enum",
+          "required": true,
+          "label": "Material Type",
+          "enumValues": ["Raw Material", "In-Process", "Bulk Drug", "Finished Product"]
+        },
+        {
+          "name": "status",
+          "type": "enum",
+          "required": true,
+          "label": "Status",
+          "enumValues": ["Pending", "Received", "Testing", "Released", "Rejected"]
+        },
+        {
+          "name": "location",
+          "type": "string",
+          "required": false,
+          "label": "Storage Location"
+        },
+        {
+          "name": "createdAt",
+          "type": "date",
+          "required": true,
+          "label": "Created Date"
+        },
+        {
+          "name": "createdBy",
+          "type": "string",
+          "required": true,
+          "label": "Created By"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "page-dashboard",
+      "type": "dashboard",
+      "title": "Sample Dashboard",
+      "entity": "Sample",
+      "components": ["table-samples", "button-create"]
+    },
+    {
+      "id": "page-create",
+      "type": "create",
+      "title": "Create Sample",
+      "entity": "Sample",
+      "components": ["form-create"]
+    },
+    {
+      "id": "page-detail",
+      "type": "detail",
+      "title": "Sample Details",
+      "entity": "Sample",
+      "components": ["card-details", "button-edit"]
+    }
+  ],
+  "components": [
+    {
+      "id": "table-samples",
+      "type": "table",
+      "entity": "Sample",
+      "props": {
+        "title": "All Samples",
+        "columns": ["sampleId", "batchNumber", "material", "status", "location", "createdAt"],
+        "sortable": true,
+        "filterable": true,
+        "data": [
+          {
+            "sampleId": "SMP-2512-001",
+            "batchNumber": "B-2025-001",
+            "material": "Raw Material",
+            "status": "Received",
+            "location": "Freezer-A",
+            "createdAt": "2025-12-14",
+            "createdBy": "J. Doe"
+          },
+          {
+            "sampleId": "SMP-2512-002",
+            "batchNumber": "B-2025-002",
+            "material": "In-Process",
+            "status": "Testing",
+            "location": "Lab-B",
+            "createdAt": "2025-12-14",
+            "createdBy": "A. Smith"
+          },
+          {
+            "sampleId": "SMP-2512-003",
+            "batchNumber": "B-2025-003",
+            "material": "Finished Product",
+            "status": "Released",
+            "location": "Storage-C",
+            "createdAt": "2025-12-13",
+            "createdBy": "M. Johnson"
+          }
+        ]
+      }
+    },
+    {
+      "id": "button-create",
+      "type": "button",
+      "props": {
+        "label": "Create New Sample",
+        "variant": "primary",
+        "action": "navigate",
+        "targetPage": "page-create"
+      }
+    },
+    {
+      "id": "form-create",
+      "type": "form",
+      "entity": "Sample",
+      "props": {
+        "title": "New Sample Registration",
+        "submitLabel": "Register Sample",
+        "fields": [
+          {
+            "name": "sampleId",
+            "label": "Sample ID",
+            "type": "text",
+            "placeholder": "Auto-generated",
+            "required": true,
+            "readonly": false
+          },
+          {
+            "name": "batchNumber",
+            "label": "Batch Number",
+            "type": "text",
+            "placeholder": "e.g., B-2025-001",
+            "required": true
+          },
+          {
+            "name": "material",
+            "label": "Material Type",
+            "type": "select",
+            "options": ["Raw Material", "In-Process", "Bulk Drug", "Finished Product"],
+            "required": true
+          },
+          {
+            "name": "status",
+            "label": "Initial Status",
+            "type": "select",
+            "options": ["Pending", "Received"],
+            "defaultValue": "Pending",
+            "required": true
+          },
+          {
+            "name": "location",
+            "label": "Storage Location",
+            "type": "text",
+            "placeholder": "e.g., Freezer-A, Shelf-B",
+            "required": false
+          },
+          {
+            "name": "createdBy",
+            "label": "Operator Name",
+            "type": "text",
+            "placeholder": "Your name",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "card-details",
+      "type": "card",
+      "entity": "Sample",
+      "props": {
+        "title": "Sample Information",
+        "fields": ["sampleId", "batchNumber", "material", "status", "location", "createdAt", "createdBy"]
+      }
+    },
+    {
+      "id": "button-edit",
+      "type": "button",
+      "props": {
+        "label": "Update Status",
+        "variant": "secondary",
+        "action": "edit"
+      }
+    }
+  ],
+  "navigation": [
+    {
+      "label": "Dashboard",
+      "pageId": "page-dashboard",
+      "icon": "home"
+    },
+    {
+      "label": "Create Sample",
+      "pageId": "page-create",
+      "icon": "plus"
+    }
+  ]
+}

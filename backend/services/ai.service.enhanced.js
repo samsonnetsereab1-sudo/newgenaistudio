@@ -359,31 +359,32 @@ body {
 }
 
 export const runAI = async (prompt) => {
-  // Check for explicit DEMO_MODE flag
-  if (process.env.DEMO_MODE === 'true') {
-    console.warn('[AI Service] Running in DEMO_MODE - returning placeholder spec');
-    const isBiologics = isBiologicsPrompt(prompt);
-    const files = isBiologics ? generateBiologicsApp(prompt) : generateGeneralApp(prompt);
-    const layout = isBiologics ? buildBiologicsLayout(prompt) : buildGeneralLayout(prompt);
-    
-    return {
-      status: 'ok',
-      mode: 'demo',
-      files,
-      layout,
-      schema: layout,
-      messages: [
-        { 
-          role: 'assistant', 
-          content: '⚠️ DEMO MODE: This is placeholder data. Set DEMO_MODE=false and configure OPENAI_API_KEY for real generation.'
-        }
-      ]
-    };
-  }
+  // DISABLED DEMO_MODE - ALWAYS USE REAL AI
+  // if (process.env.DEMO_MODE === 'true') {
+  //   console.warn('[AI Service] Running in DEMO_MODE - returning placeholder spec');
+  //   const isBiologics = isBiologicsPrompt(prompt);
+  //   const files = isBiologics ? generateBiologicsApp(prompt) : generateGeneralApp(prompt);
+  //   const layout = isBiologics ? buildBiologicsLayout(prompt) : buildGeneralLayout(prompt);
+  //   
+  //   return {
+  //     status: 'ok',
+  //     mode: 'demo',
+  //     files,
+  //     layout,
+  //     schema: layout,
+  //     messages: [
+  //       { 
+  //         role: 'assistant', 
+  //         content: '⚠️ DEMO MODE: This is placeholder data. Set DEMO_MODE=false and configure OPENAI_API_KEY for real generation.'
+  //       }
+  //     ]
+  //   };
+  // }
   
-  // REAL OPENAI GENERATION
+  // REAL AI GENERATION (OpenAI fallback if Gemini not used)
   if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your-api-key-here') {
-    throw new Error('OPENAI_API_KEY not configured. Cannot generate app. Set DEMO_MODE=true for placeholder behavior.');
+    console.error('[AI Service] ❌ OPENAI_API_KEY not configured. This should not be reached if using Gemini from controller.');
+    throw new Error('OPENAI_API_KEY not configured. Cannot generate app.');
   }
   
   try {
@@ -411,7 +412,16 @@ Return ONLY valid JSON in this EXACT format:
         "id": "xxx",
         "type": "page",
         "props": {"title": "Page Title"},
-        "children": [...]
+        "children": [
+          {
+            "id": "yyy",
+            "type": "section",
+            "props": {"title": "Section"},
+            "children": [
+              {"id": "tbl1", "type": "table", "props": {"title": "Records", "columns": ["ID", "Name"]}}
+            ]
+          }
+        ]
       }
     ]
   },
@@ -428,7 +438,22 @@ REQUIREMENTS:
 - Include lucide-react icons where appropriate
 - Make it beautiful and professional
 - Ensure all imports are correct
-- Code must be production-ready`;
+- Code must be production-ready
+- layout.nodes must contain at least one page, and EVERY page must have children with >=1 interactive component (table | form | button | input | chart | list); no empty children arrays
+- Do NOT return top-level "nodes" outside layout; use layout.nodes
+
+DOMAIN FORMAT (when the prompt mentions agents/workflows/states):
+- You MUST include these top-level fields in the JSON:
+  - agents: Array of { name, displayName, responsibilities[], permissions{...} }
+  - workflows: Array of { name, trigger, states[], transitions[], modal{ title, questions[], capturePhoto, buttons[] } }
+  - schema.entities: Array with at least one entity (e.g., "Sample") that defines states with allowedActions and associated agents
+
+Examples to follow:
+"agents": [ { "name": "CustodyBot", "displayName": "Custody Bot", "responsibilities": ["chain-of-custody","handoff"], "permissions": { "canLock": true, "canRelease": true } } ],
+"workflows": [ { "name": "OOS Investigation", "trigger": "state_change:OOS_LOCK", "states": [{"name":"Start"},{"name":"Investigation"},{"name":"Complete"}], "transitions": [{"from":"Start","to":"Investigation","action":"open_modal"}], "modal": { "title": "OOS Investigation", "questions": [{"id":"q1","type":"yes_no","text":"Instrument within calibration?","required":true},{"id":"q2","type":"text","text":"Describe deviation","required":true},{"id":"q3","type":"select","text":"Root cause","options":["Method","Instrument","Sample","Operator"],"required":true}], "capturePhoto": true, "buttons": [{"label":"Submit","action":"submit","variant":"primary"},{"label":"Cancel","action":"cancel","variant":"secondary"}] } } ],
+"schema": { "entities": [ { "name": "Sample", "states": { "RECEIVED": {"label":"Received","uiMode":"normal","allowedActions":["assign","start_test"]}, "IN_LAB": {"label":"In Lab","uiMode":"normal","allowedActions":["record_result","lock_oos"]}, "OOS_LOCK": {"label":"OOS Locked","uiMode":"locked","allowedActions":["open_investigation"]}, "RELEASED": {"label":"Released","uiMode":"normal","allowedActions":["archive"]} }, "agents": ["CustodyBot","QualityBot"] } ] }
+
+Return ONLY valid JSON.`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -454,6 +479,123 @@ REQUIREMENTS:
     throw new Error(`AI generation failed: ${error.message}`);
   }
 };
+
+/**
+ * Generate AppSpec using OpenAI (optimized for domain prompts)
+ * @param {string} prompt - User prompt
+ * @returns {Promise<object>} AppSpec-compatible layout
+ */
+export async function generateWithOpenAI(prompt) {
+  console.log('[OpenAI] Generating AppSpec for domain prompt');
+  
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY not configured');
+  }
+  
+  try {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    
+    const systemPrompt = `You are an expert application generator for NewGen Studio.
+
+Generate a complete application specification in AppSpec format.
+
+CRITICAL: If the prompt mentions agents, workflows, states, or modals, you MUST include them in your response.
+
+Return ONLY valid JSON in this AppSpec format (use layout.nodes, not top-level nodes):
+{
+  "status": "ok",
+  "version": "2.0",
+  "mode": "generated",
+  "id": "layout-xxx",
+  "name": "App Name",
+  "domain": "pharma|biotech|clinical|generic",
+  "layout": {
+    "id": "layout-xxx",
+    "name": "App Name",
+    "domain": "pharma|biotech|clinical|generic",
+    "nodes": [
+      {
+        "id": "page-1",
+        "type": "page",
+        "props": {"title": "Main"},
+        "children": [
+          {
+            "id": "section-1",
+            "type": "section",
+            "props": {"title": "Overview"},
+            "children": [
+              {"id": "table-1", "type": "table", "props": {"title": "Records", "columns": ["ID", "Name"]}},
+              {"id": "button-1", "type": "button", "props": {"label": "Add", "variant": "primary"}}
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "agents": [
+    {
+      "name": "AgentName",
+      "displayName": "Agent Display Name",
+      "responsibilities": ["task1", "task2"],
+      "permissions": {"canLock": true, "canRelease": true}
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Workflow Name",
+      "trigger": "state_change:STATE_NAME",
+      "states": [{"name": "Start"}, {"name": "Complete"}],
+      "transitions": [{"from": "Start", "to": "Complete", "action": "submit"}],
+      "modal": {
+        "title": "Workflow Modal",
+        "questions": [{"id":"q1","type":"text","text":"Describe","required":true}],
+        "hasPhotoCapture": true,
+        "capturePhoto": true,
+        "buttons": [{"label":"Submit","action":"submit","variant":"primary"}]
+      }
+    }
+  ],
+  "schema": {
+    "entities": [
+      {
+        "name": "EntityName",
+        "states": {"STATE1": {}, "STATE2": {}},
+        "agents": ["AgentName"]
+      }
+    ]
+  }
+}
+
+STRICT LAYOUT RULES:
+- Do NOT return top-level "nodes"; always nest under layout.nodes
+- layout.nodes must contain at least one page
+- EVERY page must have children with at least one interactive component (table | form | button | input | chart | list)
+- Do not emit empty children arrays anywhere; if unsure, add a sensible interactive child
+
+Available node types: page, section, card, table, chart, button, text, form, input, list
+Always include layout.nodes with at least one page node.`;
+    
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 4096,
+      response_format: { type: 'json_object' }
+    });
+    
+    const result = JSON.parse(response.choices[0].message.content);
+    console.log('[OpenAI] ✓ Generated AppSpec');
+    console.log(`[OpenAI] Agents: ${result.agents?.length || 0}, Workflows: ${result.workflows?.length || 0}`);
+    
+    return result;
+  } catch (error) {
+    console.error('[OpenAI] ❌ Generation failed:', error.message);
+    throw new Error(`OpenAI generation failed: ${error.message}`);
+  }
+}
 
 /**
  * TODO: Replace with real AI integration

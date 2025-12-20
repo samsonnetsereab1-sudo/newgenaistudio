@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+backend/invalid-specs/
+
+# Environment variables (SECURITY: Never commit sensitive keys)
+backend/.env
+.env
+.env.local
+.env.production

@@ -26,10 +26,7 @@ console.log('6. Body parser enabled');
 
 // Mount all API routes
 console.log('7. Mounting /api routes');
-app.use((req, res, next) => {
-  console.log(`📨 Incoming request: ${req.method} ${req.url}`);
-  next();
-});
+// Removed request logging middleware to prevent crashes
 app.use('/api', routes);
 console.log('8. Routes mounted successfully');
 

@@ -1,0 +1,324 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://newgen-studio.local/schemas/appspec/2.0.json",
+  "title": "AppSpec 2.0 Schema",
+  "description": "Formal specification for NewGen Studio application layout and structure",
+  "type": "object",
+  "required": ["status", "version", "layout"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ok", "error"],
+      "description": "Generation success status"
+    },
+    "version": {
+      "type": "string",
+      "enum": ["2.0", "1.0"],
+      "description": "Schema version"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["generated", "refined", "fallback", "template", "error"],
+      "description": "How the spec was created"
+    },
+    "layout": {
+      "type": "object",
+      "required": ["id", "name", "nodes"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique layout identifier"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Human-readable app name"
+        },
+        "domain": {
+          "type": "string",
+          "enum": ["pharma", "biotech", "clinical", "manufacturing", "generic"],
+          "default": "generic",
+          "description": "Domain classification"
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/UINode"
+          },
+          "description": "Root-level pages or sections"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "intentSummary": { "type": "string" },
+        "generatedAt": { "type": "string" },
+        "modelUsed": { "type": "string" }
+      }
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Generated source files (App.jsx, etc.)"
+    },
+    "problems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "message"],
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": ["error", "warning", "info"]
+          },
+          "message": { "type": "string" },
+          "path": { "type": "string" },
+          "code": { "type": "string" }
+        }
+      },
+      "description": "Validation or generation errors"
+    },
+    "schema": {
+      "type": "object",
+      "description": "Data model schema (entities, types, relationships)",
+      "properties": {
+        "entities": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Entity" }
+        }
+      }
+    },
+    "agents": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Agent" },
+      "description": "Domain agents (roles/responsibilities)"
+    },
+    "workflows": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Workflow" },
+      "description": "State machines and interaction flows"
+    }
+  },
+  "definitions": {
+    "UINode": {
+      "type": "object",
+      "required": ["id", "type", "props"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "description": "Unique node identifier (alphanumeric, dash, underscore)"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "page",
+            "section",
+            "container",
+            "card",
+            "table",
+            "form",
+            "button",
+            "input",
+            "text",
+            "image",
+            "divider",
+            "tabs",
+            "modal",
+            "chart",
+            "list"
+          ],
+          "description": "Component type"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "label": { "type": "string" },
+            "placeholder": { "type": "string" },
+            "body": { "type": "string" },
+            "variant": {
+              "type": "string",
+              "enum": ["primary", "secondary", "danger", "success", "info", "default"]
+            },
+            "columns": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "For tables: column names"
+            },
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "label": { "type": "string" },
+                  "type": {
+                    "type": "string",
+                    "enum": ["text", "number", "email", "date", "select", "textarea", "checkbox"]
+                  },
+                  "required": { "type": "boolean" },
+                  "placeholder": { "type": "string" },
+                  "options": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              },
+              "description": "For forms: field definitions"
+            }
+          },
+          "additionalProperties": true,
+          "description": "Component-specific properties"
+        },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/UINode" },
+          "description": "Nested child nodes"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "page" } } },
+          "then": {
+            "required": ["children"],
+            "properties": {
+              "children": {
+                "type": "array",
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Entity": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "description": "Entity name (e.g., Sample, Test)" },
+        "displayName": { "type": "string" },
+        "description": { "type": "string" },
+        "states": {
+          "type": "object",
+          "description": "Valid states for this entity (e.g., RECEIVED, IN_LAB, OOS_LOCK)",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "color": { "type": "string", "pattern": "^#[0-9a-f]{6}$|^(red|blue|green|yellow|orange)$" },
+              "uiMode": { "type": "string", "enum": ["normal", "warning", "critical", "locked"] },
+              "allowedActions": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "agents": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Agents responsible for this entity"
+        }
+      }
+    },
+    "Agent": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "description": "Agent identifier (e.g., CustodyBot, MethodBot)" },
+        "displayName": { "type": "string", "description": "Human-readable name" },
+        "description": { "type": "string" },
+        "responsibilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Actions this agent can perform"
+        },
+        "permissions": {
+          "type": "object",
+          "additionalProperties": { "type": "boolean" }
+        }
+      }
+    },
+    "Workflow": {
+      "type": "object",
+      "required": ["name", "trigger"],
+      "properties": {
+        "name": { "type": "string", "description": "Workflow name (e.g., OOS Investigation)" },
+        "description": { "type": "string" },
+        "trigger": {
+          "type": "string",
+          "description": "What initiates this workflow (e.g., state_change:OOS_LOCK)"
+        },
+        "initialState": { "type": "string" },
+        "finalState": { "type": "string" },
+        "states": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "label": { "type": "string" },
+              "uiComponent": { "type": "string", "enum": ["form", "modal", "page", "card"] }
+            }
+          }
+        },
+        "transitions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": { "type": "string" },
+              "to": { "type": "string" },
+              "condition": { "type": "string" },
+              "action": { "type": "string" }
+            }
+          }
+        },
+        "modal": {
+          "$ref": "#/definitions/Modal",
+          "description": "If this workflow displays a modal"
+        }
+      }
+    },
+    "Modal": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "type": "string", "enum": ["text", "yes_no", "select", "textarea"] },
+              "text": { "type": "string" },
+              "required": { "type": "boolean" },
+              "options": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "capturePhoto": { "type": "boolean" },
+        "buttons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "action": { "type": "string" },
+              "variant": { "type": "string", "enum": ["primary", "secondary", "danger"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

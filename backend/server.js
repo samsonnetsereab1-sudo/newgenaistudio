@@ -1,14 +1,14 @@
 // Global error handlers FIRST (before any imports that might throw)
 process.on('uncaughtException', (err) => {
-  console.error('🔥 UNCAUGHT EXCEPTION - Process will exit. Error:', err && err.stack ? err.stack : err);
-  process.exit(1);
+  console.error('🔥 UNCAUGHT EXCEPTION - captured. Error:', err && err.stack ? err.stack : err);
+  // Do NOT exit; keep server alive and rely on error middleware
 });
 
 process.on('unhandledRejection', (reason, p) => {
-  console.error('🔥 UNHANDLED REJECTION - Promise rejected without handler.');
+  console.error('🔥 UNHANDLED REJECTION - captured.');
   console.error('Reason:', reason);
   console.error('Promise:', p);
-  process.exit(1);
+  // Do NOT exit; keep server alive
 });
 
 console.log('✓ Bootstrap starting - PID', process.pid);
@@ -19,13 +19,16 @@ console.log('✓ Dotenv loaded');
 import app from './app.js';
 console.log('✓ App imported');
 
-const PORT = process.env.PORT || 4000;
 
-const server = app.listen(PORT, () => {
-  console.log(`✅ API running on http://localhost:${PORT}`);
+// Ensure server binds to 0.0.0.0 so Windows browser can reach WSL service
+const port = process.env.PORT || 4000;
+const server = app.listen(port, '0.0.0.0', () => {
+  console.log(`Backend listening on http://0.0.0.0:${port}`);
   console.log(`� DEMO_MODE: ${process.env.DEMO_MODE}`);
-  console.log(`🔑 OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? '✓ Set' : '✗ Not set'}`);  console.log(`🤖 UI_PROVIDER: ${process.env.UI_PROVIDER || 'openai'}`);
-  console.log(`💎 GEMINI_API_KEY: ${process.env.GEMINI_API_KEY ? '✓ Set' : '✗ Not set'}`);  console.log(`�📋 Endpoints:`);
+  console.log(`🔑 OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? '✓ Set' : '✗ Not set'}`);
+  console.log(`🤖 UI_PROVIDER: ${process.env.UI_PROVIDER || 'openai'}`);
+  console.log(`💎 GEMINI_API_KEY: ${process.env.GEMINI_API_KEY ? '✓ Set' : '✗ Not set'}`);
+  console.log(`�📋 Endpoints:`);
   console.log(`   GET  /api/health`);
   console.log(`   POST /api/generate`);
   console.log(`   GET  /api/v1/layouts/:id`);
@@ -37,27 +40,6 @@ const server = app.listen(PORT, () => {
   console.log(`   POST /api/v1/agents/orchestrate`);
 });
 
-// Log when a connection is established
-server.on('connection', (socket) => {
-  console.log('🔌 CONNECTION from', socket.remoteAddress, socket.remotePort);
-  
-  socket.on('data', (chunk) => {
-    console.log('📦 Socket received data:', chunk.length, 'bytes');
-  });
-  
-  socket.on('error', (err) => {
-    console.error('🔌 Socket error:', err.message, err.code);
-  });
-  
-  socket.on('close', (hadError) => {
-    console.log('🔌 Socket closed', hadError ? 'with error' : 'cleanly');
-  });
-  
-  socket.on('end', () => {
-    console.log('🔌 Socket ended');
-  });
-});
-
 // Log server errors
 server.on('error', (err) => {
   console.error('💥 Server error:', err.message, err.code);
@@ -67,3 +49,10 @@ server.on('error', (err) => {
 server.on('close', () => {
   console.log('🛑 Server closed');
 });
+
+// Diagnostic: log signals/exit to investigate unexpected shutdowns
+const logSignal = (sig) => console.warn(`⚠️  Received ${sig} signal`);
+process.on('SIGINT', () => logSignal('SIGINT'));
+process.on('SIGTERM', () => logSignal('SIGTERM'));
+process.on('SIGHUP', () => logSignal('SIGHUP'));
+process.on('exit', (code) => console.warn(`⚠️  Process exit with code ${code}`));

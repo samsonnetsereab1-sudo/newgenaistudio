@@ -13,20 +13,41 @@ const genAI = process.env.GEMINI_API_KEY
   ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
   : null;
 
+const APPSPEC_REPAIR_INSTRUCTION = `You are a JSON repair agent for NewGen Studio AppSpec.
+
+Goal: Fix the provided invalid AppSpec so it passes schema validation and viability checks.
+
+Rules:
+- Output ONLY valid JSON (no prose, markdown, or code fences).
+- Preserve existing IDs when possible; do not drop user-specified names.
+- Every page must have a children array with at least one interactive component (table, form, button, input, chart, list).
+- Do not emit empty children arrays anywhere.
+- Keep top-level shape: version, mode, metadata, layout.nodes (or children) populated with pages.
+- If something is missing, add sensible defaults instead of leaving arrays empty.
+- Return the complete repaired AppSpec.
+
+Input fields:
+- prompt: user prompt string
+- invalidAppSpec: previous AppSpec JSON
+- problems: array of validation issues to fix
+`;
+
 /**
  * System instruction for strict AppSpec generation
  */
 const APPSPEC_SYSTEM_INSTRUCTION = `You are a UI specification generator for NewGen Studio.
 
-CRITICAL RULES:
-1. Output ONLY valid JSON - no prose, no markdown, no explanations
-2. Follow the EXACT AppSpec schema provided
-3. For sample management, include ALL required fields
-4. Use descriptive labels (e.g., "Create Sample" not "Button")
-5. Generate complete, functional UI components
+OUTPUT RULES (STRICT):
+1) Return ONLY valid JSON (no prose, no markdown, no code fences).
+2) Use the EXACT AppSpec root shape: { "status", "version", "mode", "metadata", "layout":{...}, "agents":[], "workflows":[], "schema":{...}, "files":{} }.
+3) Use layout.nodes ONLY. NEVER emit top-level "nodes". The root must have layout.nodes with at least one page.
+4) Every page must contain a section with at least one interactive child (table | form | button | input | chart | list). No empty children arrays anywhere.
+5) Provide descriptive titles/labels (e.g., "Sample Table", "Create Sample").
+6) Keep agents/workflows/states exactly as provided in the prompt when present.
 
-REQUIRED AppSpec structure:
+MINIMAL VALID EXAMPLE (imitate structure):
 {
+  "status": "ok",
   "version": "2.0",
   "mode": "generated",
   "metadata": {
@@ -35,120 +56,73 @@ REQUIRED AppSpec structure:
     "domain": "biologics|pharma|clinical|generic",
     "intentSummary": "What this app does"
   },
-  "entities": [
-    {
-      "name": "EntityName",
-      "pluralName": "EntityNames",
-      "fields": [
-        {
-          "name": "fieldName",
-          "type": "string|number|date|enum|reference",
-          "required": true|false,
-          "enumValues": ["val1", "val2"]
-        }
-      ]
-    }
-  ],
-  "pages": [
-    {
-      "id": "page-dashboard",
-      "type": "dashboard",
-      "title": "Dashboard",
-      "entity": "EntityName",
-      "components": ["table-1", "button-1"]
-    },
-    {
-      "id": "page-create",
-      "type": "create",
-      "title": "Create Entity",
-      "entity": "EntityName",
-      "components": ["form-1"]
-    },
-    {
-      "id": "page-detail",
-      "type": "detail",
-      "title": "Entity Detail",
-      "entity": "EntityName",
-      "components": ["card-1"]
-    }
-  ],
-  "components": [
-    {
-      "id": "table-1",
-      "type": "table",
-      "props": {
-        "title": "Entity List",
-        "columns": ["field1", "field2", "field3"]
-      }
-    },
-    {
-      "id": "button-1",
-      "type": "button",
-      "props": {
-        "label": "Create Entity",
-        "variant": "primary"
-      }
-    },
-    {
-      "id": "form-1",
-      "type": "form",
-      "props": {
-        "title": "Create Entity",
-        "fields": [
+  "layout": {
+    "id": "layout-1",
+    "name": "App Name",
+    "domain": "generic",
+    "nodes": [
+      {
+        "id": "page-1",
+        "type": "page",
+        "props": { "title": "Dashboard" },
+        "children": [
           {
-            "name": "field1",
-            "label": "Field 1",
-            "type": "string",
-            "required": true
+            "id": "section-1",
+            "type": "section",
+            "props": { "title": "Overview" },
+            "children": [
+              { "id": "table-1", "type": "table", "props": { "title": "Records", "columns": ["ID", "Name", "Status"] }, "children": [] },
+              { "id": "button-1", "type": "button", "props": { "label": "Add Record", "variant": "primary", "action": "create" }, "children": [] }
+            ]
           }
         ]
       }
+    ]
+  },
+  "agents": [
+    { "name": "AgentName", "displayName": "Agent Name", "responsibilities": ["task-a","task-b"], "permissions": { "canLock": false, "canRelease": false } }
+  ],
+  "workflows": [
+    {
+      "name": "WorkflowName",
+      "trigger": "event_or_state_change",
+      "states": [{"name":"Start"},{"name":"Complete"}],
+      "transitions": [{"from":"Start","to":"Complete","action":"submit"}],
+      "modal": {
+        "title": "Workflow Modal",
+        "questions": [{"id":"q1","type":"text","text":"Describe","required":true}],
+        "capturePhoto": false,
+        "buttons": [{"label":"Submit","action":"submit","variant":"primary"}]
+      }
     }
   ],
-  "actions": [
-    {
-      "id": "action-create",
-      "type": "navigate",
-      "trigger": "onClick",
-      "target": "page-create"
-    },
-    {
-      "id": "action-view-detail",
-      "type": "navigate",
-      "trigger": "onRowClick",
-      "target": "page-detail"
-    }
-  ],
-  "dataSources": [
-    {
-      "id": "datasource-list",
-      "entity": "EntityName",
-      "query": "list"
-    }
-  ]
+  "schema": {
+    "entities": [
+      {
+        "name": "EntityName",
+        "states": { "RECEIVED": {}, "IN_LAB": {}, "OOS_LOCK": {}, "RELEASED": {} },
+        "agents": ["AgentName"]
+      }
+    ]
+  },
+  "files": {}
 }
 
-SAMPLE MANAGEMENT REQUIREMENTS:
-When prompt mentions "sample management" or "samples", the entities MUST include:
+SAMPLE MANAGEMENT REQUIREMENTS (when prompt mentions samples):
+- Entity "Sample" with fields: sampleId (string, required), batchLotId (string), sampleType (enum: ["Blood","Tissue","Serum","Plasma","Other"]), dateReceived (date, required), quantity (number), unit (enum: ["mL","mg","units"]), storageTemp (enum: ["-80C","-20C","4C","RT"]), storageLocation (string), status (enum: ["Received","In Storage","In Analysis","Consumed"]).
+- Pages: Dashboard (table with all fields + Add Sample button), Create Sample form (all fields), Sample Detail (read-only card + status/actions).
 
-Entity: Sample
-Fields:
-- sampleId (string, required)
-- batchLotId (string)
-- sampleType (enum: ["Blood", "Tissue", "Serum", "Plasma", "Other"])
-- dateReceived (date, required)
-- quantity (number)
-- unit (enum: ["mL", "mg", "units"])
-- storageTemp (enum: ["-80°C", "-20°C", "4°C", "RT"])
-- storageLocation (string)
-- status (enum: ["Received", "In Storage", "In Analysis", "Consumed"])
+AGENTS/WORKFLOWS/STATES (when present in prompt):
+- agents[] must include the exact names and responsibilities; permissions must be booleans.
+- workflows[] must include exact workflow/state names, transitions, and modal when requested; modal must include questions[] and buttons[].
+- schema.entities[].states must include the state names from the prompt.
 
-Pages required:
-1. Dashboard with table showing all fields
-2. Create Sample form with all fields
-3. Sample Detail page
+STRICTNESS:
+- No top-level "nodes" key. Only layout.nodes.
+- No empty children arrays. If unsure, add a section with a table and a primary button.
+- Must include at least one interactive component per page.
 
-NO analytics cards, NO generic buttons, NO placeholders.`;
+Return ONLY the JSON described.`;
 
 /**
  * Generate AppSpec using Gemini
@@ -171,7 +145,15 @@ export async function generateAppSpecWithGemini(prompt) {
       systemInstruction: APPSPEC_SYSTEM_INSTRUCTION
     });
 
-    const result = await model.generateContent(`Generate a complete AppSpec for: ${prompt}`);
+    // Note: Controller-level timeout is enforced at callAIWithTimeout()
+    // Do NOT enforce timeout here - let the controller manage it
+    const generatePromise = model.generateContent(`Generate a complete AppSpec for: ${prompt}
+
+  REQUIREMENTS:
+  - Include top-level agents[] and workflows[] when the prompt mentions agents/workflows/states.
+  - Ensure schema.entities[0] defines states with allowedActions and references involved agents.
+  - Use the exact agent names, state names, and workflow names provided in the prompt.`);
+    const result = await generatePromise;
     const response = result.response;
     const text = response.text();
 
@@ -218,11 +200,71 @@ export async function generateAppSpecWithGemini(prompt) {
     console.log(`  - ${appSpec.components.length} components`);
     console.log(`  - ${appSpec.actions.length} actions`);
 
-    return appSpec;
+    // Transform Gemini format (entities/pages/components) to AppSpec format (layout.nodes)
+    const transformedSpec = transformGeminiToAppSpec(appSpec);
+    return transformedSpec;
 
   } catch (error) {
     console.error('[Gemini] Generation error:', error.message);
     throw new Error(`Gemini generation failed: ${error.message}`);
+  }
+}
+
+/**
+ * Repair an invalid AppSpec using Gemini
+ * @param {object} repairInput { prompt, invalidAppSpec, problems }
+ */
+export async function repairAppSpecWithGemini(repairInput) {
+  if (!genAI) {
+    throw new Error('Gemini not configured. Set GEMINI_API_KEY in .env');
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-exp',
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 4096,
+        responseMimeType: 'application/json'
+      },
+      systemInstruction: APPSPEC_REPAIR_INSTRUCTION
+    });
+
+    const payload = {
+      prompt: repairInput.prompt,
+      invalidAppSpec: repairInput.invalidAppSpec,
+      problems: repairInput.problems
+    };
+
+    const repairPromise = model.generateContent({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: JSON.stringify(payload) }]
+        }
+      ]
+    });
+
+    const result = await repairPromise;
+    const response = result.response;
+    const text = response.text();
+
+    let repairedSpec;
+    try {
+      repairedSpec = JSON.parse(text);
+    } catch (parseError) {
+      console.error('[Gemini] Repair JSON parse error:', parseError.message);
+      console.error('[Gemini] Raw repair text:', text.substring(0, 500));
+      throw new Error('Gemini returned invalid JSON during repair');
+    }
+
+    if (!repairedSpec.version) repairedSpec.version = '2.0';
+    if (!repairedSpec.mode) repairedSpec.mode = 'generated';
+
+    return transformGeminiToAppSpec(repairedSpec);
+  } catch (error) {
+    console.error('[Gemini] Repair error:', error.message);
+    throw new Error(`Gemini repair failed: ${error.message}`);
   }
 }
 
@@ -258,7 +300,10 @@ User wants to: ${instructions}
 
 Return the complete updated AppSpec JSON.`;
 
-    const result = await model.generateContent(prompt);
+    // Note: Controller-level timeout is enforced at callAIWithTimeout()
+    // Do NOT enforce timeout here - let the controller manage it
+    const refinePromise = model.generateContent(prompt);
+    const result = await refinePromise;
     const response = result.response;
     const text = response.text();
 
@@ -272,4 +317,102 @@ Return the complete updated AppSpec JSON.`;
     console.error('[Gemini] Refinement error:', error.message);
     throw new Error(`Gemini refinement failed: ${error.message}`);
   }
+}
+
+/**
+ * Transform Gemini's format (entities/pages/components) to AppSpec format (layout.nodes)
+ */
+function transformGeminiToAppSpec(geminiSpec) {
+  const nodes = [];
+  
+  // Create a page node for each page, with its components as children
+  if (geminiSpec.pages && geminiSpec.pages.length > 0) {
+    geminiSpec.pages.forEach((page, pageIdx) => {
+      const pageNode = {
+        id: page.id || `page-${pageIdx}`,
+        type: 'page',
+        props: {
+          title: page.title || 'Page'
+        },
+        children: []
+      };
+      
+      // Map components to this page
+      if (page.components && page.components.length > 0) {
+        page.components.forEach((componentId) => {
+          const component = geminiSpec.components?.find(c => c.id === componentId);
+          if (component) {
+            pageNode.children.push(componentToNode(component));
+          }
+        });
+      }
+      
+      nodes.push(pageNode);
+    });
+  }
+  
+  // Fallback: if no pages, create nodes from components directly
+  if (nodes.length === 0 && geminiSpec.components) {
+    geminiSpec.components.forEach((component) => {
+      nodes.push(componentToNode(component));
+    });
+  }
+  
+  // Ensure at least one page
+  if (nodes.length === 0) {
+    nodes.push({
+      id: 'page-default',
+      type: 'page',
+      props: { title: geminiSpec.metadata?.name || 'App' },
+      children: [
+        {
+          id: 'card-welcome',
+          type: 'card',
+          props: { title: 'Welcome' }
+        }
+      ]
+    });
+  }
+  
+  return {
+    status: 'ok',
+    version: '1.0',
+    domain: geminiSpec.domain || geminiSpec.metadata?.domain || 'generic',
+    layout: {
+      id: `layout-${Date.now()}`,
+      name: geminiSpec.metadata?.name || 'Generated App',
+      domain: geminiSpec.metadata?.domain || 'generic',
+      nodes: nodes
+    },
+    schema: {
+      entities: geminiSpec.entities || [],
+      pages: geminiSpec.pages || [],
+      components: geminiSpec.components || [],
+      actions: geminiSpec.actions || []
+    },
+    files: {},
+    messages: []
+  };
+}
+
+/**
+ * Convert a Gemini component to an AppSpec UINode
+ */
+function componentToNode(component) {
+  return {
+    id: component.id || `comp-${Date.now()}`,
+    type: component.type || 'card',
+    props: {
+      title: component.props?.title,
+      label: component.props?.label,
+      placeholder: component.props?.placeholder,
+      variant: component.props?.variant,
+      columns: component.props?.columns,
+      fields: component.props?.fields,
+      ...component.props
+    },
+    children: component.children?.map(child => 
+      typeof child === 'string' ? { id: child, type: 'text', props: {} } : componentToNode(child)
+    ) || []
+  };
 }
