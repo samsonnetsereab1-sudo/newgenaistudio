@@ -32,8 +32,8 @@ git push -u origin main
 In Render Dashboard → Your Service → Environment:
 
 **Required:**
-- `OPENAI_API_KEY`: `sk-...` (create in OpenAI dashboard; add only in Render env settings)
-- `GEMINI_API_KEY`: `AIza...` (Gemini key stored in Render env settings)
+- `OPENAI_API_KEY`: `<your-openai-key-here>` (create in OpenAI dashboard; add only in Render env settings)
+- `GEMINI_API_KEY`: `<your-gemini-key-here>` (Gemini key stored in Render env settings)
 - `MONGODB_URI`: `mongodb+srv://<user>:<password>@<cluster-url>/<db>?retryWrites=true&w=majority`
 
 **Optional:**
