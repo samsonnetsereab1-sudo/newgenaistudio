@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import Landing from './pages/Landing';
+import Portfolio from './pages/Portfolio';
 import RequireAuth from './auth/RequireAuth';
 
 const ACCESS_CODE = 'newgen-beta';
@@ -520,6 +521,7 @@ export default function SimpleApp() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/portfolio" element={<Portfolio />} />
       <Route path="/gate" element={<BetaGate />} />
       <Route path="/app" element={<RequireAuth><AppShell /></RequireAuth>}>
         <Route index element={<Dashboard />} />

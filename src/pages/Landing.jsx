@@ -24,7 +24,12 @@ export default function Landing() {
         <nav style={{ display: 'flex', gap: '32px', fontSize: '14px' }}>
           <span style={{ color: '#94a3b8', cursor: 'pointer' }}>Services</span>
           <span style={{ color: '#94a3b8', cursor: 'pointer' }}>About</span>
-          <span style={{ color: '#94a3b8', cursor: 'pointer' }}>Work</span>
+          <span 
+            onClick={() => navigate('/portfolio')}
+            style={{ color: '#94a3b8', cursor: 'pointer' }}
+          >
+            Work
+          </span>
           <button 
             onClick={() => navigate('/gate')}
             style={{ 
@@ -89,6 +94,7 @@ export default function Landing() {
               Book a call
             </button>
             <button 
+              onClick={() => navigate('/portfolio')}
               style={{ 
                 background: 'transparent', 
                 color: 'white', 
