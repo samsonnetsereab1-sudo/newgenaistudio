@@ -1,0 +1,41 @@
+[35m.github/copilot-instructions.md[m[36m:[m- `[1;31mOPENAI[m_API_KEY` — Required for fallback/refinement
+[35m.github/copilot-instructions.md[m[36m:[mecho $GEMINI_API_KEY $[1;31mOPENAI[m_API_KEY
+[35m.github/copilot-instructions.md[m[36m:[m- Verify: Both `GEMINI_API_KEY` and `[1;31mOPENAI[m_API_KEY` present
+[35mBASE44_PLATFORM_DISCOVERY.md[m[36m:[mCurrent env pattern: `GEMINI_API_KEY`, `[1;31mOPENAI[m_API_KEY`, `DEMO_MODE`, `UI_PROVIDER`
+[35mBASE44_SEARCH_SUMMARY.md[m[36m:[m- `[1;31mOPENAI[m_API_KEY`
+[35mKEY_ROTATION_CHECKLIST.md[m[36m:[m[1;31mOPENAI[m_API_KEY=sk-proj-dUaLXK5WUXAA...
+[35mKEY_ROTATION_CHECKLIST.md[m[36m:[m[1;31mOPENAI[m_API_KEY=sk-proj-YOURNEWKEYHERE...
+[35mKEY_ROTATION_CHECKLIST.md[m[36m:[m🔑 [1;31mOPENAI[m_API_KEY: ✓ Set
+[35mRENDER_DEPLOYMENT.md[m[36m:[m- `[1;31mOPENAI[m_API_KEY`: `sk-...` (create in OpenAI dashboard; add only in Render env settings)
+[35mSETUP_GUIDE.md[m[36m:[mconst openai = new OpenAI({ apiKey: process.env.[1;31mOPENAI[m_API_KEY });
+[35mSTAGED_GENERATION_IMPLEMENTATION.md[m[36m:[m[1;31mOPENAI[m_API_KEY=your-key-here
+[35mTWO_BRAINS_IMPLEMENTATION.md[m[36m:[m  return hasDomainConstructs && process.env.[1;31mOPENAI[m_API_KEY;
+[35mbackend/controllers/apps.controller.js[m[36m:[m        message: 'Staged generation requires real AI. Set DEMO_MODE=false and configure [1;31mOPENAI[m_API_KEY'
+[35mbackend/controllers/generate.controller.js[m[36m:[m  if (!process.env.[1;31mOPENAI[m_API_KEY) return false;
+[35mbackend/controllers/generate.controller.js[m[36m:[m      : ((process.env.[1;31mOPENAI[m_API_KEY && shouldUseOpenAI(prompt)) ? 'openai' : (process.env.UI_PROVIDER || 'gemini'));
+[35mbackend/controllers/generate.controller.js[m[36m:[m      ? (process.env.[1;31mOPENAI[m_API_KEY ? 'openai' : 'none')
+[35mbackend/controllers/generate.controller.js[m[36m:[m    if (provider === 'openai' && process.env.[1;31mOPENAI[m_API_KEY) {
+[35mbackend/render.yaml[m[36m:[m      - key: [1;31mOPENAI[m_API_KEY
+[35mbackend/server.js[m[36m:[m  console.log(`🔑 [1;31mOPENAI[m_API_KEY: ${process.env.[1;31mOPENAI[m_API_KEY ? '✓ Set' : '✗ Not set'}`);
+[35mbackend/services/ai.router.js[m[36m:[mconst openai = process.env.[1;31mOPENAI[m_API_KEY 
+[35mbackend/services/ai.router.js[m[36m:[m  ? new OpenAI({ apiKey: process.env.[1;31mOPENAI[m_API_KEY })
+[35mbackend/services/ai.router.js[m[36m:[mconst azureOpenai = (process.env.AZURE_[1;31mOPENAI[m_ENDPOINT && process.env.AZURE_[1;31mOPENAI[m_KEY)
+[35mbackend/services/ai.router.js[m[36m:[m      apiKey: process.env.AZURE_[1;31mOPENAI[m_KEY,
+[35mbackend/services/ai.router.js[m[36m:[m      baseURL: `${process.env.AZURE_[1;31mOPENAI[m_ENDPOINT}/openai/deployments/${process.env.AZURE_[1;31mOPENAI[m_DEPLOYMENT_NAME}`,
+[35mbackend/services/ai.router.js[m[36m:[m      defaultHeaders: { 'api-key': process.env.AZURE_[1;31mOPENAI[m_KEY }
+[35mbackend/services/ai.router.js[m[36m:[m    throw new Error('[1;31mOPENAI[m_API_KEY not configured');
+[35mbackend/services/ai.router.js[m[36m:[m    throw new Error('Azure OpenAI not configured. Set AZURE_[1;31mOPENAI[m_ENDPOINT, AZURE_[1;31mOPENAI[m_KEY, and AZURE_[1;31mOPENAI[m_DEPLOYMENT_NAME');
+[35mbackend/services/ai.router.js[m[36m:[m    model: process.env.AZURE_[1;31mOPENAI[m_DEPLOYMENT_NAME,
+[35mbackend/services/ai.service.enhanced.js[m[36m:[m  //         content: '⚠️ DEMO MODE: This is placeholder data. Set DEMO_MODE=false and configure [1;31mOPENAI[m_API_KEY for real generation.'
+[35mbackend/services/ai.service.enhanced.js[m[36m:[m  if (!process.env.[1;31mOPENAI[m_API_KEY || process.env.[1;31mOPENAI[m_API_KEY === 'your-api-key-here') {
+[35mbackend/services/ai.service.enhanced.js[m[36m:[m    console.error('[AI Service] ❌ [1;31mOPENAI[m_API_KEY not configured. This should not be reached if using Gemini from controller.');
+[35mbackend/services/ai.service.enhanced.js[m[36m:[m    throw new Error('[1;31mOPENAI[m_API_KEY not configured. Cannot generate app.');
+[35mbackend/services/ai.service.enhanced.js[m[36m:[m    const openai = new OpenAI({ apiKey: process.env.[1;31mOPENAI[m_API_KEY });
+[35mbackend/services/ai.service.enhanced.js[m[36m:[m  if (!process.env.[1;31mOPENAI[m_API_KEY) {
+[35mbackend/services/ai.service.enhanced.js[m[36m:[m    throw new Error('[1;31mOPENAI[m_API_KEY not configured');
+[35mbackend/services/ai.service.enhanced.js[m[36m:[m    const openai = new OpenAI({ apiKey: process.env.[1;31mOPENAI[m_API_KEY });
+[35mbackend/services/ai.service.enhanced.js[m[36m:[m * const openai = new OpenAI({ apiKey: process.env.[1;31mOPENAI[m_API_KEY });
+[35mbackend/services/ai.service.staged.js[m[36m:[m    if (!process.env.[1;31mOPENAI[m_API_KEY) {
+[35mbackend/services/ai.service.staged.js[m[36m:[m      throw new Error('[1;31mOPENAI[m_API_KEY not configured');
+[35mbackend/services/ai.service.staged.js[m[36m:[m    openai = new OpenAI({ apiKey: process.env.[1;31mOPENAI[m_API_KEY });
+[35mbackend/services/refine.service.js[m[36m:[mconst openai = new OpenAI({ apiKey: process.env.[1;31mOPENAI[m_API_KEY });

@@ -10,7 +10,8 @@
 
 ### Delete Old Key
 1. Go to: https://platform.openai.com/api-keys
-2. Find key starting with: `sk-proj-dUaLXK5WUXAA...`
+2. Find key starting with your current OpenAI key (shown once when you create it).
+
 3. Click **"Revoke"** or trash icon
 4. Confirm deletion ✓
 
