@@ -244,7 +244,7 @@ function BuildPage() {
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
-    const HARD_TIMEOUT_MS = 25000; // above current backend worst-case (~19s)
+    const HARD_TIMEOUT_MS = 60000; // Allow up to 60s for backend AI calls (Gemini/OpenAI + synthesis)
 
     setStatus('loading');
     setSlowHint(false);
@@ -253,7 +253,7 @@ function BuildPage() {
     setElapsed(0);
     setGenerationStartTime(Date.now());
 
-    const slowHintTimer = setTimeout(() => setSlowHint(true), 2000); // non-terminal hint
+    const slowHintTimer = setTimeout(() => setSlowHint(true), 3000); // Show hint after 3s
     const controller = new AbortController();
     const hardTimer = setTimeout(() => controller.abort(), HARD_TIMEOUT_MS);
     
@@ -311,7 +311,7 @@ function BuildPage() {
 
       const isTimeout = err.name === 'AbortError' || err?.message === 'timeout';
       const errorMsg = isTimeout
-        ? 'The request took too long (25s cap). Please try again.'
+        ? 'The request took too long (60s cap). Please try again or try a simpler prompt.'
         : `Error: ${err.message}`;
       
       setProblems([{
@@ -382,19 +382,26 @@ function BuildPage() {
   const handleImportFile = async (file) => {
     try {
       const text = await file.text();
-      const json = JSON.parse(text);
-      const spec = extractAppSpecFromManifest(json);
-      if (!spec) {
-        setProblems([{ severity: 'error', message: 'Unable to find AppSpec in BASE44 manifest.' }]);
+      const manifest = JSON.parse(text);
+      const resp = await fetch(`${API_BASE}/api/platform/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: 'base44', manifest, projectName: manifest?.project?.name || 'Imported Project' })
+      });
+      if (!resp.ok) throw new Error(`Import failed: ${resp.status}`);
+      const data = await resp.json();
+      const frontend = data.frontend || null;
+      if (!frontend || !Array.isArray(frontend.children)) {
+        setProblems([{ severity: 'error', message: 'Import succeeded but AppSpec conversion failed.' }]);
         setGeneratedApp(null);
         return;
       }
-      setGeneratedApp(spec);
+      setGeneratedApp(frontend);
       setProblems([]);
       setMode('imported');
     } catch (e) {
       console.error('Import error:', e);
-      setProblems([{ severity: 'error', message: 'Invalid file. Please select a valid .base44.json or AppSpec JSON.' }]);
+      setProblems([{ severity: 'error', message: 'Invalid file or server error. Please select a valid .base44.json.' }]);
     }
   };
 
@@ -517,7 +524,7 @@ function BuildPage() {
                 <div style={{ fontSize: '48px', marginBottom: '16px', animation: 'spin 1s linear infinite' }}>⚙️</div>
                 <div style={{ fontSize: '16px', fontWeight: '600', color: '#1e1b4b', marginBottom: '8px' }}>Generating your app...</div>
                 <div style={{ fontSize: '14px', color: '#64748b' }}>
-                  {slowHint ? 'This is taking longer than usual (still working)...' : 'This may take up to 25 seconds'}
+                  {slowHint ? 'Still generating (can take up to 60s with complex prompts)...' : 'This may take up to 60 seconds'}
                 </div>
               </div>
             ) : problems.length > 0 ? (
@@ -559,29 +566,12 @@ function ProblemCard({ problems, mode, app }) {
   }[mode] || '⚙️ Generated';
 
   return (
-    <div style={{ 
-      background: 'white', 
-      border: '1px solid #e2e8f0', 
-      borderRadius: '8px', 
-          padding: '12px 14px',
-          borderRadius: '12px',
-          marginBottom: '10px',
-          cursor: 'pointer',
-          background: active ? 'linear-gradient(135deg, #6d7dff 0%, #8b5cf6 100%)' : 'rgba(255,255,255,0.9)',
-          color: active ? 'white' : '#0f172a',
-          fontWeight: 600,
-          boxShadow: active ? '0 12px 32px rgba(109,125,255,0.26)' : '0 8px 22px rgba(15,23,42,0.05)',
-          border: active ? '1px solid rgba(255,255,255,0.35)' : '1px solid #e8ecf4',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          transition: 'all 0.2s ease',
-          backdropFilter: 'blur(4px)'
+    <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px 14px', marginBottom: '10px' }}>
       <div style={{ marginBottom: '16px' }}>
         {problems.map((p, idx) => (
-          <div 
-            key={idx} 
-            style={{ 
+          <div
+            key={idx}
+            style={{
               background: p.severity === 'error' ? '#fee2e2' : p.severity === 'warning' ? '#fef3c7' : '#dbeafe',
               border: `1px solid ${p.severity === 'error' ? '#fecaca' : p.severity === 'warning' ? '#fcd34d' : '#bfdbfe'}`,
               color: p.severity === 'error' ? '#991b1b' : p.severity === 'warning' ? '#92400e' : '#1e40af',
