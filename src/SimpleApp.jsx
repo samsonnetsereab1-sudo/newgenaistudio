@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Portfolio from './pages/Portfolio';
 import RequireAuth from './auth/RequireAuth';
+import StatusPage from './pages/StatusPage';
 
 const ACCESS_CODE = 'newgen-beta';
 
@@ -107,6 +108,12 @@ function AppShell() {
             Build
           </div>
           <div 
+            onClick={() => navigate('/app/status')}
+            style={{ padding: '10px', color: '#64748b', cursor: 'pointer' }}
+          >
+            Status
+          </div>
+          <div 
             onClick={() => navigate('/app/projects')}
             style={{ padding: '10px', color: '#64748b', cursor: 'pointer' }}
           >
@@ -170,7 +177,7 @@ function BuildPage() {
   const [metrics, setMetrics] = useState(null);
   const [metricsStatus, setMetricsStatus] = useState('idle');
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+  const API_BASE = import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
   const isGenerating = status === 'loading';
 
   React.useEffect(() => {
@@ -526,6 +533,7 @@ export default function SimpleApp() {
       <Route path="/app" element={<RequireAuth><AppShell /></RequireAuth>}>
         <Route index element={<Dashboard />} />
         <Route path="build" element={<BuildPage />} />
+        <Route path="status" element={<StatusPage />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="templates" element={<TemplatesPage />} />
         <Route path="simulations" element={<SimulationsPage />} />
