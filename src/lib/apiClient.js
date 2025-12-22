@@ -1,9 +1,16 @@
 // src/lib/apiClient.js
 import axios from "axios";
 
+// Prefer VITE_API_BASE, fall back to VITE_API_BASE_URL, then localhost
+const RAW_BASE =
+  import.meta.env.VITE_API_BASE ||
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:4000";
+// Normalize: strip trailing slashes so path joins are correct
+const BASE_URL = String(RAW_BASE).replace(/\/+$/, "");
+
 const apiClient = axios.create({
-  // Point this at your backend. Adjust the port if needed.
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:4000",
+  baseURL: BASE_URL,
   timeout: 45000, // 45s frontend timeout (backend decides to respond within 30s)
 });
 
@@ -24,7 +31,7 @@ export default apiClient;
  * @returns {Promise<{status: string, files: object, messages: array}>}
  */
 export async function generate(prompt) {
-  const res = await apiClient.post("/generate", { prompt });
+  const res = await apiClient.post("/api/generate", { prompt });
   return res.data;
 }
 
