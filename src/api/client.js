@@ -3,7 +3,12 @@
  * Centralized HTTP client with environment-based configuration
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
+// Resolve API base from env and normalize by stripping trailing slashes
+const RAW_API_BASE =
+  import.meta.env.VITE_API_BASE ||
+  import.meta.env.VITE_API_BASE_URL ||
+  'http://localhost:4000';
+const API_BASE = String(RAW_API_BASE).replace(/\/+$/, '');
 
 /**
  * Generic fetch wrapper with error handling
