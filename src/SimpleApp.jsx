@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Portfolio from './pages/Portfolio';
 import RequireAuth from './auth/RequireAuth';
@@ -86,64 +86,81 @@ function BetaGate() {
 
 function AppShell() {
   const navigate = useNavigate();
+  const location = useLocation();
   
   const handleSignOut = () => {
     localStorage.removeItem('ng_beta_access');
     navigate('/gate', { replace: true });
   };
   
+  const navItems = [
+    { label: 'Dashboard', path: '/app', icon: '📊' },
+    { label: 'Build', path: '/app/build', icon: '⚗️' },
+    { label: 'Status', path: '/app/status', icon: '🩺' },
+    { label: 'Projects', path: '/app/projects', icon: '🧪' },
+    { label: 'Templates', path: '/app/templates', icon: '🧬' },
+  ];
+
+  const NavButton = ({ item }) => {
+    const active = location.pathname === item.path;
+    return (
+      <div
+        onClick={() => navigate(item.path)}
+        style={{
+          padding: '12px 14px',
+          borderRadius: '12px',
+          marginBottom: '10px',
+          cursor: 'pointer',
+          background: active ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'transparent',
+          color: active ? 'white' : '#0f172a',
+          fontWeight: 600,
+          boxShadow: active ? '0 10px 30px rgba(99,102,241,0.28)' : 'none',
+          border: active ? '1px solid rgba(255,255,255,0.25)' : '1px solid #e2e8f0',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        <span>{item.icon}</span>
+        <span>{item.label}</span>
+      </div>
+    );
+  };
+
   return (
-    <div style={{ display: 'flex', height: '100vh', background: '#f8fafc' }}>
-      <div style={{ width: '260px', background: 'white', borderRight: '1px solid #e2e8f0', padding: '20px' }}>
-        <h2 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: '700' }}>NewGen Studio</h2>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'radial-gradient(circle at 20% 20%, #f0f4ff 0%, #f8fafc 35%, #f8fafc 100%)' }}>
+      <div style={{ width: '280px', padding: '22px', backdropFilter: 'blur(6px)', background: 'rgba(255,255,255,0.9)', borderRight: '1px solid #e2e8f0', boxShadow: '4px 0 30px rgba(15,23,42,0.05)' }}>
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>NewGen Studio</div>
+          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Biologics & Pharma Builder</div>
+        </div>
         <nav>
-          <div 
-            onClick={() => navigate('/app')}
-            style={{ padding: '10px', background: '#8b5cf6', color: 'white', borderRadius: '8px', marginBottom: '5px', cursor: 'pointer' }}
-          >
-            Dashboard
-          </div>
-          <div 
-            onClick={() => navigate('/app/build')}
-            style={{ padding: '10px', color: '#64748b', cursor: 'pointer' }}
-          >
-            Build
-          </div>
-          <div 
-            onClick={() => navigate('/app/status')}
-            style={{ padding: '10px', color: '#64748b', cursor: 'pointer' }}
-          >
-            Status
-          </div>
-          <div 
-            onClick={() => navigate('/app/projects')}
-            style={{ padding: '10px', color: '#64748b', cursor: 'pointer' }}
-          >
-            Projects
-          </div>
-          <div 
-            onClick={() => navigate('/app/templates')}
-            style={{ padding: '10px', color: '#64748b', cursor: 'pointer' }}
-          >
-            Templates
-          </div>
+          {navItems.map(item => <NavButton key={item.path} item={item} />)}
         </nav>
-        <button 
+        <div style={{ marginTop: '28px', padding: '14px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569', fontSize: '12px', lineHeight: 1.5 }}>
+          <strong style={{ display: 'block', marginBottom: '6px', color: '#0f172a' }}>Safety-first</strong>
+          Domain-aware workflows with compliant defaults for regulated teams.
+        </div>
+        <button
           onClick={handleSignOut}
-          style={{ 
-            marginTop: '20px', 
-            padding: '8px 16px', 
-            background: '#ef4444', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: '6px', 
-            cursor: 'pointer' 
+          style={{
+            marginTop: '18px',
+            width: '100%',
+            padding: '10px 14px',
+            background: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '10px',
+            cursor: 'pointer',
+            fontWeight: 700,
+            boxShadow: '0 12px 24px rgba(239,68,68,0.25)'
           }}
         >
           Sign Out
         </button>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px 24px' }}>
         <Outlet />
       </div>
     </div>
@@ -337,27 +354,40 @@ function BuildPage() {
   };
 
   return (
-    <div style={{ padding: '40px', maxWidth: '1600px', margin: '0 auto' }}>
+    <div style={{ padding: '32px', maxWidth: '1600px', margin: '0 auto' }}>
       {showWelcome && (
         <WelcomeModal
           onClose={() => { localStorage.setItem('ng_welcome_seen', 'true'); sessionStorage.setItem('ng_welcome_dismissed', 'true'); setShowWelcome(false); }}
           onStatus={() => { localStorage.setItem('ng_welcome_seen', 'true'); sessionStorage.setItem('ng_welcome_dismissed', 'true'); setShowWelcome(false); window.location.href = '/app/status'; }}
         />
       )}
-      <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>Build New App</h1>
-      <p style={{ color: '#64748b', marginBottom: '32px' }}>Describe your app in plain language, and we'll generate a fully functional interface</p>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
         <div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 10px', background: 'rgba(99,102,241,0.12)', color: '#4f46e5', borderRadius: '999px', fontSize: '12px', fontWeight: 700, border: '1px solid rgba(99,102,241,0.18)' }}>
+            🧬 Biologics-ready • Compliance-minded
+          </div>
+          <h1 style={{ fontSize: '34px', fontWeight: '900', margin: '12px 0 6px', color: '#0f172a' }}>Build New App</h1>
+          <p style={{ color: '#475569', margin: 0, fontSize: '14px' }}>Describe your app in plain language. We’ll generate a structured, compliant layout for regulated domains.</p>
+        </div>
+        <div style={{ padding: '12px 14px', background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(15,23,42,0.08)', fontSize: '12px', color: '#0f172a' }}>
+          <div style={{ fontWeight: 700, marginBottom: '4px' }}>Live guardrails</div>
+          <div style={{ color: '#64748b' }}>Domain-aware patterns + AppSpec validation before render.</div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.4fr', gap: '20px' }}>
+        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', boxShadow: '0 14px 40px rgba(15,23,42,0.06)' }}>
+          <label style={{ display: 'block', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Prompt</label>
           <textarea 
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Describe your app..."
-            style={{ width: '100%', height: '200px', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontFamily: 'monospace', fontSize: '14px', resize: 'vertical' }}
+            style={{ width: '100%', height: '200px', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', fontFamily: 'monospace', fontSize: '14px', resize: 'vertical', background: '#f8fafc' }}
           />
           <button 
             onClick={handleGenerate}
-            style={{ width: '100%', padding: '12px', background: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', marginTop: '12px' }}
+            style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', cursor: 'pointer', marginTop: '12px', boxShadow: '0 14px 30px rgba(99,102,241,0.30)' }}
             disabled={isGenerating}
           >
             {isGenerating ? `Generating... (${elapsed}s)` : 'Generate App'}
@@ -367,7 +397,7 @@ function BuildPage() {
               <button 
                 onClick={handleExport}
                 disabled={exportStatus === 'loading'}
-                style={{ width: '100%', padding: '10px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', marginTop: '8px', fontWeight: '600' }}
+                style={{ width: '100%', padding: '12px', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', marginTop: '10px', fontWeight: '700', boxShadow: '0 10px 24px rgba(14,165,233,0.25)' }}
               >
                 {exportStatus === 'loading' ? 'Exporting...' : exportStatus === 'success' ? '✓ Exported' : 'Export BASE44'}
               </button>
@@ -379,19 +409,19 @@ function BuildPage() {
                   setMetrics(null);
                   setExportStatus('idle');
                 }}
-                style={{ width: '100%', padding: '8px', background: '#e2e8f0', color: '#64748b', border: 'none', borderRadius: '8px', cursor: 'pointer', marginTop: '8px', fontWeight: '500' }}
+                style={{ width: '100%', padding: '10px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '10px', cursor: 'pointer', marginTop: '8px', fontWeight: '600' }}
               >
                 Clear
               </button>
             </>
           )}
 
-          <div style={{ marginTop: '16px', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', background: '#fff' }}>
+          <div style={{ marginTop: '16px', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px', background: '#f8fafc' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <strong style={{ color: '#1e1b4b' }}>Generation Metrics</strong>
+              <strong style={{ color: '#0f172a' }}>Generation Metrics</strong>
               <button
                 onClick={() => fetchMetrics()}
-                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569', cursor: 'pointer', fontSize: '12px' }}
+                style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#475569', cursor: 'pointer', fontSize: '12px' }}
               >
                 {metricsStatus === 'loading' ? 'Refreshing...' : 'Refresh'}
               </button>
@@ -426,26 +456,29 @@ function BuildPage() {
           </div>
         </div>
         
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '320px' }}>
-          {isGenerating ? (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px', animation: 'spin 1s linear infinite' }}>⚙️</div>
-              <div style={{ fontSize: '16px', fontWeight: '600', color: '#1e1b4b', marginBottom: '8px' }}>Generating your app...</div>
-              <div style={{ fontSize: '14px', color: '#64748b' }}>
-                {slowHint ? 'This is taking longer than usual (still working)...' : 'This may take up to 25 seconds'}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '320px', background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 14px 40px rgba(15,23,42,0.05)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 20% 30%, rgba(99,102,241,0.08), transparent 40%), radial-gradient(circle at 80% 70%, rgba(14,165,233,0.08), transparent 35%)' }} />
+          <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {isGenerating ? (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px', animation: 'spin 1s linear infinite' }}>⚙️</div>
+                <div style={{ fontSize: '16px', fontWeight: '600', color: '#1e1b4b', marginBottom: '8px' }}>Generating your app...</div>
+                <div style={{ fontSize: '14px', color: '#64748b' }}>
+                  {slowHint ? 'This is taking longer than usual (still working)...' : 'This may take up to 25 seconds'}
+                </div>
               </div>
-            </div>
-          ) : problems.length > 0 ? (
-            <ProblemCard problems={problems} mode={mode} app={generatedApp} />
-          ) : generatedApp && Array.isArray(generatedApp.children) && generatedApp.children.length > 0 ? (
-            <RenderApp app={generatedApp} />
-          ) : (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>✨</div>
-              <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '8px' }}>App Preview</h3>
-              <p style={{ color: '#64748b' }}>Your generated app will appear here</p>
-            </div>
-          )}
+            ) : problems.length > 0 ? (
+              <ProblemCard problems={problems} mode={mode} app={generatedApp} />
+            ) : generatedApp && Array.isArray(generatedApp.children) && generatedApp.children.length > 0 ? (
+              <RenderApp app={generatedApp} />
+            ) : (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>✨</div>
+                <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '8px', color: '#0f172a' }}>App Preview</h3>
+                <p style={{ color: '#64748b' }}>Your generated app will appear here</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
