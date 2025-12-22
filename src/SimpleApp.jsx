@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Portfolio from './pages/Portfolio';
 import RequireAuth from './auth/RequireAuth';
+import WelcomeModal from './components/WelcomeModal';
 import StatusPage from './pages/StatusPage';
 
 const ACCESS_CODE = 'newgen-beta';
@@ -177,6 +178,7 @@ function BuildPage() {
   const [metrics, setMetrics] = useState(null);
   const [metricsStatus, setMetricsStatus] = useState('idle');
   const [exportStatus, setExportStatus] = useState('idle');
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
   const isGenerating = status === 'loading';
@@ -202,6 +204,12 @@ function BuildPage() {
   React.useEffect(() => {
     fetchMetrics().catch(() => {});
   }, [fetchMetrics]);
+
+  // Welcome modal: show once per user/session after entering builder
+  React.useEffect(() => {
+    const seen = localStorage.getItem('ng_welcome_seen') === 'true' || sessionStorage.getItem('ng_welcome_dismissed') === 'true';
+    if (!seen) setShowWelcome(true);
+  }, []);
 
   // Timer to show elapsed time during generation
   React.useEffect(() => {
@@ -329,6 +337,12 @@ function BuildPage() {
 
   return (
     <div style={{ padding: '40px', maxWidth: '1600px', margin: '0 auto' }}>
+      {showWelcome && (
+        <WelcomeModal
+          onClose={() => { localStorage.setItem('ng_welcome_seen', 'true'); sessionStorage.setItem('ng_welcome_dismissed', 'true'); setShowWelcome(false); }}
+          onStatus={() => { localStorage.setItem('ng_welcome_seen', 'true'); sessionStorage.setItem('ng_welcome_dismissed', 'true'); setShowWelcome(false); window.location.href = '/app/status'; }}
+        />
+      )}
       <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>Build New App</h1>
       <p style={{ color: '#64748b', marginBottom: '32px' }}>Describe your app in plain language, and we'll generate a fully functional interface</p>
       
