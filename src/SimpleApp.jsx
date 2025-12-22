@@ -129,8 +129,8 @@ function AppShell() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'radial-gradient(circle at 20% 20%, #f0f4ff 0%, #f8fafc 35%, #f8fafc 100%)' }}>
-      <div style={{ width: '280px', padding: '22px', backdropFilter: 'blur(6px)', background: 'rgba(255,255,255,0.9)', borderRight: '1px solid #e2e8f0', boxShadow: '4px 0 30px rgba(15,23,42,0.05)' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'radial-gradient(circle at 22% 18%, #eef2ff 0%, #f4f7fb 35%, #f8fafc 100%)' }}>
+      <div style={{ width: '280px', padding: '22px', backdropFilter: 'blur(10px)', background: 'linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(245,248,252,0.95) 100%)', borderRight: '1px solid #e5e7eb', boxShadow: '6px 0 32px rgba(109,125,255,0.08)' }}>
         <div style={{ marginBottom: '24px' }}>
           <div style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>NewGen Studio</div>
           <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Biologics & Pharma Builder</div>
@@ -138,7 +138,7 @@ function AppShell() {
         <nav>
           {navItems.map(item => <NavButton key={item.path} item={item} />)}
         </nav>
-        <div style={{ marginTop: '28px', padding: '14px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569', fontSize: '12px', lineHeight: 1.5 }}>
+        <div style={{ marginTop: '28px', padding: '14px', borderRadius: '12px', background: 'rgba(248,250,252,0.85)', border: '1px solid #e5e7eb', color: '#475569', fontSize: '12px', lineHeight: 1.5, boxShadow: '0 10px 26px rgba(15,23,42,0.05)' }}>
           <strong style={{ display: 'block', marginBottom: '6px', color: '#0f172a' }}>Safety-first</strong>
           Domain-aware workflows with compliant defaults for regulated teams.
         </div>
@@ -510,19 +510,20 @@ function ProblemCard({ problems, mode, app }) {
       background: 'white', 
       border: '1px solid #e2e8f0', 
       borderRadius: '8px', 
-      padding: '20px',
-      maxWidth: '100%'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#1e1b4b' }}>
-          {modeLabel}
-        </h3>
-        <div style={{ fontSize: '12px', color: '#64748b' }}>
-          {errorCount > 0 && <span style={{ color: '#dc2626' }}>🔴 {errorCount} error{errorCount !== 1 ? 's' : ''}</span>}
-          {warningCount > 0 && <span style={{ marginLeft: '8px', color: '#ea580c' }}>🟠 {warningCount} warning{warningCount !== 1 ? 's' : ''}</span>}
-        </div>
-      </div>
-
+          padding: '12px 14px',
+          borderRadius: '12px',
+          marginBottom: '10px',
+          cursor: 'pointer',
+          background: active ? 'linear-gradient(135deg, #6d7dff 0%, #8b5cf6 100%)' : 'rgba(255,255,255,0.9)',
+          color: active ? 'white' : '#0f172a',
+          fontWeight: 600,
+          boxShadow: active ? '0 12px 32px rgba(109,125,255,0.26)' : '0 8px 22px rgba(15,23,42,0.05)',
+          border: active ? '1px solid rgba(255,255,255,0.35)' : '1px solid #e8ecf4',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          transition: 'all 0.2s ease',
+          backdropFilter: 'blur(4px)'
       <div style={{ marginBottom: '16px' }}>
         {problems.map((p, idx) => (
           <div 
