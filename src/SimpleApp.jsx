@@ -176,6 +176,7 @@ function BuildPage() {
   const [generationStartTime, setGenerationStartTime] = useState(null);
   const [metrics, setMetrics] = useState(null);
   const [metricsStatus, setMetricsStatus] = useState('idle');
+  const [exportStatus, setExportStatus] = useState('idle');
 
   const API_BASE = import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
   const isGenerating = status === 'loading';
@@ -299,6 +300,33 @@ function BuildPage() {
     }
   };
 
+  const handleExport = async () => {
+    if (!generatedApp) return;
+    setExportStatus('loading');
+    try {
+      const res = await fetch(`${API_BASE}/api/platform/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appSpec: generatedApp, options: { domain: 'pharma' } })
+      });
+      if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+      const data = await res.json();
+      
+      // Download manifest as JSON
+      const blob = new Blob([JSON.stringify(data.manifest, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `newgen-app-${Date.now()}.base44.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setExportStatus('success');
+    } catch (err) {
+      console.error('Export error:', err);
+      setExportStatus('error');
+    }
+  };
+
   return (
     <div style={{ padding: '40px', maxWidth: '1600px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px' }}>Build New App</h1>
@@ -320,17 +348,27 @@ function BuildPage() {
             {isGenerating ? `Generating... (${elapsed}s)` : 'Generate App'}
           </button>
           {generatedApp && (
-            <button 
-              onClick={() => {
-                setGeneratedApp(null);
-                setProblems([]);
-                setMode(null);
-                setMetrics(null);
-              }}
-              style={{ width: '100%', padding: '8px', background: '#e2e8f0', color: '#64748b', border: 'none', borderRadius: '8px', cursor: 'pointer', marginTop: '8px', fontWeight: '500' }}
-            >
-              Clear
-            </button>
+            <>
+              <button 
+                onClick={handleExport}
+                disabled={exportStatus === 'loading'}
+                style={{ width: '100%', padding: '10px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', marginTop: '8px', fontWeight: '600' }}
+              >
+                {exportStatus === 'loading' ? 'Exporting...' : exportStatus === 'success' ? '✓ Exported' : 'Export BASE44'}
+              </button>
+              <button 
+                onClick={() => {
+                  setGeneratedApp(null);
+                  setProblems([]);
+                  setMode(null);
+                  setMetrics(null);
+                  setExportStatus('idle');
+                }}
+                style={{ width: '100%', padding: '8px', background: '#e2e8f0', color: '#64748b', border: 'none', borderRadius: '8px', cursor: 'pointer', marginTop: '8px', fontWeight: '500' }}
+              >
+                Clear
+              </button>
+            </>
           )}
 
           <div style={{ marginTop: '16px', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', background: '#fff' }}>

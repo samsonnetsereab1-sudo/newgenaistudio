@@ -105,6 +105,17 @@ export async function runSimulation(simulationConfig) {
   });
 }
 
+/**
+ * Export to BASE44
+ * POST /api/platform/export
+ */
+export async function exportToPlatform(appSpec, options = {}) {
+  return fetchAPI('/api/platform/export', {
+    method: 'POST',
+    body: JSON.stringify({ appSpec, options }),
+  });
+}
+
 export default {
   fetchBackendHealth,
   fetchBiologicsSummary,
@@ -114,4 +125,5 @@ export default {
   orchestrateAgents,
   generateCode,
   runSimulation,
+  exportToPlatform,
 };
