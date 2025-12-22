@@ -17,10 +17,24 @@ const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5175';
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 console.log('5. Configuring CORS and body parser');
-app.use(cors({ 
-  origin: isDevelopment ? '*' : FRONTEND_ORIGIN,
-  credentials: true 
-}));
+// Explicit CORS with allow-listed origin reflection for production
+const ALLOWED_ORIGINS = [FRONTEND_ORIGIN].filter(Boolean);
+app.use((req, res, next) => {
+  const requestOrigin = req.headers.origin;
+  const originToSend = isDevelopment
+    ? (requestOrigin || '*')
+    : (ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : FRONTEND_ORIGIN);
+
+  res.setHeader('Access-Control-Allow-Origin', originToSend || '');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
+  const reqHeaders = req.headers['access-control-request-headers'] || 'content-type';
+  res.setHeader('Access-Control-Allow-Headers', reqHeaders);
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
 app.use(express.json({ limit: '5mb' }));
 console.log('6. Body parser enabled');
 

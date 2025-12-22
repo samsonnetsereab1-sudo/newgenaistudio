@@ -3,6 +3,15 @@
 app = "newgenaistudio-staging"
 primary_region = "iad"
 
+# Ensure the machine runs our Node server entrypoint
+cmd = ["node", "/app/backend/server.js"]
+
+[env]
+# Explicit port and CORS origin + production mode
+  PORT = "4000"
+  FRONTEND_ORIGIN = "https://newgenstudio-git-staging.vercel.app"
+  NODE_ENV = "production"
+
 [build]
 # Use the Dockerfile at the repository root to build only the backend
   dockerfile = "Dockerfile"
