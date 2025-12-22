@@ -196,6 +196,8 @@ function BuildPage() {
   const [metrics, setMetrics] = useState(null);
   const [metricsStatus, setMetricsStatus] = useState('idle');
   const [exportStatus, setExportStatus] = useState('idle');
+  const [exportFormat, setExportFormat] = useState('base44');
+  const fileInputRef = React.useRef(null);
   const [showWelcome, setShowWelcome] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
@@ -333,23 +335,66 @@ function BuildPage() {
       const res = await fetch(`${API_BASE}/api/platform/export`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appSpec: generatedApp, options: { domain: 'pharma' } })
+        body: JSON.stringify({ appSpec: generatedApp, target: exportFormat === 'base44' ? 'base44' : 'raw', options: { domain: 'pharma' } })
       });
       if (!res.ok) throw new Error(`Export failed: ${res.status}`);
       const data = await res.json();
       
       // Download manifest as JSON
-      const blob = new Blob([JSON.stringify(data.manifest, null, 2)], { type: 'application/json' });
+      const payload = exportFormat === 'base44' ? data.manifest : generatedApp;
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `newgen-app-${Date.now()}.base44.json`;
+      a.download = exportFormat === 'base44' ? `newgen-app-${Date.now()}.base44.json` : `newgen-app-${Date.now()}.json`;
       a.click();
       URL.revokeObjectURL(url);
       setExportStatus('success');
     } catch (err) {
       console.error('Export error:', err);
       setExportStatus('error');
+    }
+  };
+
+  const extractAppSpecFromManifest = (manifest) => {
+    if (!manifest || typeof manifest !== 'object') return null;
+    const candidates = [
+      manifest.appSpec,
+      manifest.schema,
+      manifest.layout,
+      manifest.spec,
+      manifest
+    ].filter(Boolean);
+    for (const c of candidates) {
+      if (c && Array.isArray(c.nodes)) {
+        return { id: c.id || 'imported', name: c.name || 'Imported App', domain: c.domain || 'generic', children: c.nodes };
+      }
+      if (c && Array.isArray(c.children)) {
+        return c;
+      }
+      if (c && c.layout && Array.isArray(c.layout.nodes)) {
+        return { id: c.id || 'imported', name: c.name || 'Imported App', domain: c.domain || 'generic', children: c.layout.nodes };
+      }
+    }
+    return null;
+  };
+
+  const handleImportFile = async (file) => {
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const spec = extractAppSpecFromManifest(json);
+      if (!spec) {
+        setProblems([{ severity: 'error', message: 'Unable to find AppSpec in BASE44 manifest.' }]);
+        setGeneratedApp(null);
+        return;
+      }
+      setGeneratedApp(spec);
+      setProblems([]);
+      setMode('imported');
+    } catch (e) {
+      console.error('Import error:', e);
+      setProblems([{ severity: 'error', message: 'Invalid file. Please select a valid .base44.json or AppSpec JSON.' }]);
     }
   };
 
@@ -392,6 +437,14 @@ function BuildPage() {
           >
             {isGenerating ? `Generating... (${elapsed}s)` : 'Generate App'}
           </button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
+            <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value)} style={{ padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#0f172a', fontWeight: 600 }}>
+              <option value="base44">Export: BASE44</option>
+              <option value="raw">Export: Raw JSON</option>
+            </select>
+            <button onClick={() => fileInputRef.current?.click()} style={{ padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', fontWeight: 600, cursor: 'pointer' }}>Import BASE44</button>
+            <input ref={fileInputRef} type="file" accept="application/json,.json" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImportFile(f); e.target.value = ''; }} />
+          </div>
           {generatedApp && (
             <>
               <button 
