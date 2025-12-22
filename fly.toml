@@ -9,7 +9,7 @@ cmd = ["node", "/app/backend/server.js"]
 [env]
 # Explicit port and CORS origin + production mode
   PORT = "4000"
-  FRONTEND_ORIGIN = "https://newgenstudio-git-staging.vercel.app"
+  FRONTEND_ORIGIN = "https://newgenaistudiotrial.vercel.app"
   NODE_ENV = "production"
 
 [build]
