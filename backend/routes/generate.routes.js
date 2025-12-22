@@ -13,6 +13,15 @@ router.get('/test', (req, res) => {
   res.json({ message: 'Test endpoint works!' });
 });
 
+// Helpful message for GET on main endpoint
+router.get('/', (req, res) => {
+  res.status(405).json({ 
+    error: 'Method Not Allowed',
+    message: 'This endpoint requires POST with a JSON body containing "prompt"',
+    example: { prompt: 'Build a simple task tracker' }
+  });
+});
+
 console.log('🔧 [Generate Routes] Registering POST / handler...');
 router.post('/', (req, res, next) => {
   console.log('🎯 [Generate Routes] POST / handler hit!');
