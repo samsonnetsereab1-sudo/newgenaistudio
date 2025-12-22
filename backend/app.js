@@ -14,18 +14,41 @@ console.log('4. Middleware imported');
 const app = express();
 
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5175';
+const FRONTEND_ORIGINS = process.env.FRONTEND_ORIGINS || '';
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 console.log('5. Configuring CORS and body parser');
 // Explicit CORS with allow-listed origin reflection for production
-const ALLOWED_ORIGINS = [FRONTEND_ORIGIN].filter(Boolean);
+// Supports comma-separated FRONTEND_ORIGINS and simple wildcard entries like https://*.vercel.app
+const parsedOrigins = [FRONTEND_ORIGIN]
+  .concat(FRONTEND_ORIGINS.split(',').map(s => s.trim()).filter(Boolean))
+  .filter(Boolean);
+
+function matchesOrigin(allowed, origin) {
+  if (!allowed || !origin) return false;
+  if (allowed === origin) return true;
+  if (allowed.includes('*')) {
+    // Convert wildcard to a safe regex: escape dots, replace * with .+
+    const pattern = allowed
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '.+');
+    return new RegExp(`^${pattern}$`).test(origin);
+  }
+  return false;
+}
+
 app.use((req, res, next) => {
   const requestOrigin = req.headers.origin;
-  const originToSend = isDevelopment
-    ? (requestOrigin || '*')
-    : (ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : FRONTEND_ORIGIN);
+  let originToSend = '';
+  if (isDevelopment) {
+    originToSend = requestOrigin || '*';
+  } else if (requestOrigin) {
+    const ok = parsedOrigins.some(allowed => matchesOrigin(allowed, requestOrigin));
+    originToSend = ok ? requestOrigin : FRONTEND_ORIGIN;
+  }
 
   res.setHeader('Access-Control-Allow-Origin', originToSend || '');
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
   const reqHeaders = req.headers['access-control-request-headers'] || 'content-type';

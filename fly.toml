@@ -10,6 +10,9 @@ cmd = ["node", "/app/backend/server.js"]
 # Explicit port and CORS origin + production mode
   PORT = "4000"
   FRONTEND_ORIGIN = "https://newgenaistudiotrial.vercel.app"
+  # Optional: allow Preview builds or additional domains (comma-separated). Wildcards supported.
+  # Example allows all Vercel preview URLs for this beta. Narrow later as needed.
+  FRONTEND_ORIGINS = "https://newgenaistudiotrial.vercel.app,https://*.vercel.app"
   NODE_ENV = "production"
 
 [build]
