@@ -5,8 +5,7 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "env": {
-    "PORT": "3000",
-    "NODE_ENV": "production"
+    "PORT": "3000"
   },
   "envPrefix": "VITE_",
   "rewrites": [
