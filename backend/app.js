@@ -67,6 +67,21 @@ console.log('7. Mounting /api routes');
 app.use('/api', routes);
 console.log('8. Routes mounted successfully');
 
+// Root info route for convenience
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'NewGen Studio backend',
+    endpoints: [
+      'GET /api/health',
+      'POST /api/generate',
+      'POST /api/platform/import',
+      'POST /api/platform/export',
+      'GET /api/v1/agents/status'
+    ]
+  });
+});
+
 // Error handling
 app.use(notFound);
 app.use(errorHandler);

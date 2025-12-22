@@ -74,30 +74,33 @@ router.get('/adapters/:target', (req, res) => {
  */
 router.post('/export', async (req, res, next) => {
   try {
-    const { projectId, target, env, format } = req.body;
+    const { projectId, target, env, format, appSpec } = req.body;
 
-    // Validate input
-    if (!projectId) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'projectId is required'
-      });
-    }
-
+    // Validate target
     if (!target) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'target is required (e.g., "base44", "raw")'
-      });
+      return res.status(400).json({ status: 'error', message: 'target is required (e.g., "base44", "raw")' });
     }
 
-    // Fetch project
-    const project = projectService.getProject(projectId);
-    if (!project) {
-      return res.status(404).json({
-        status: 'error',
-        message: `Project not found: ${projectId}`
-      });
+    // Determine project source: from projectId or direct AppSpec
+    let project = null;
+    if (appSpec) {
+      // Build a transient project from AppSpec for export
+      const layout = appSpec.layout || {};
+      project = {
+        id: layout.id || `proj_${Date.now()}`,
+        name: layout.name || 'NewGen App',
+        domain: layout.domain || appSpec.domain || 'generic',
+        type: 'studio-app',
+        layout,
+        backendUrl: process.env.BACKEND_URL || '',
+      };
+    } else if (projectId) {
+      project = projectService.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: `Project not found: ${projectId}` });
+      }
+    } else {
+      return res.status(400).json({ status: 'error', message: 'Provide either appSpec or projectId' });
     }
 
     // Export project
@@ -139,14 +142,60 @@ router.post('/import', async (req, res, next) => {
       });
     }
 
-    // TODO: Implement import logic
-    // For now, return a placeholder response
-    res.json({
-      status: 'ok',
-      message: 'Import functionality coming soon',
-      source,
-      projectName: projectName || 'Imported Project'
-    });
+    // Convert BASE44 manifest to AppSpec
+    if (source === 'base44') {
+      const { validateAppSpec, appSpecToFrontend } = await import('../schemas/appspec.schema.js');
+
+      const toNodeType = (t) => {
+        if (!t) return 'card';
+        const map = {
+          Page: 'page', Section: 'section', Card: 'card', Table: 'table', Button: 'button',
+          Form: 'form', Input: 'input', Select: 'select', Chart: 'chart', Text: 'text'
+        };
+        return map[t] || String(t).toLowerCase();
+      };
+
+      const components = manifest?.layout?.components || [];
+      const nodes = components.map((c, idx) => ({
+        id: c.id || `${toNodeType(c.type)}-${idx}`,
+        type: toNodeType(c.type),
+        props: {
+          title: c.props?.title || c.label || c.name || c.type,
+          label: c.label || c.name,
+          columns: c.props?.columns,
+          variant: c.props?.variant,
+        },
+        children: []
+      }));
+
+      // Fallback: if no components, try layout.nodes or manifest.appSpec
+      const fallbackNodes = (manifest?.layout?.nodes) || (manifest?.appSpec?.layout?.nodes) || [];
+      const finalNodes = nodes.length ? nodes : fallbackNodes;
+
+      const spec = {
+        status: 'ok',
+        version: '1.0',
+        domain: manifest?.project?.domain || 'generic',
+        layout: {
+          id: manifest?.project?.id || `layout_${Date.now()}`,
+          name: projectName || manifest?.project?.name || 'Imported Project',
+          domain: manifest?.project?.domain || 'generic',
+          nodes: finalNodes
+        },
+        schema: manifest?.schema || null,
+        files: {},
+        messages: [{ role: 'assistant', content: 'Imported from BASE44 manifest' }]
+      };
+
+      const validation = validateAppSpec(spec);
+      if (!validation.valid) {
+        return res.status(400).json({ status: 'error', message: `Invalid AppSpec: ${validation.errors.join(', ')}` });
+      }
+
+      return res.json({ status: 'ok', spec, frontend: appSpecToFrontend(spec) });
+    }
+
+    return res.status(400).json({ status: 'error', message: `Unsupported source: ${source}` });
   } catch (error) {
     console.error('Import error:', error);
     res.status(400).json({
