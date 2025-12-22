@@ -5,6 +5,7 @@ import Portfolio from './pages/Portfolio';
 import RequireAuth from './auth/RequireAuth';
 import WelcomeModal from './components/WelcomeModal';
 import StatusPage from './pages/StatusPage';
+import ComingSoon from './pages/ComingSoon';
 
 const ACCESS_CODE = 'newgen-beta';
 
@@ -579,7 +580,8 @@ function SimulationsPage() {
 export default function SimpleApp() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
+      <Route path="/" element={<ComingSoon />} />
+      <Route path="/landing" element={<Landing />} />
       <Route path="/portfolio" element={<Portfolio />} />
       <Route path="/gate" element={<BetaGate />} />
       <Route path="/app" element={<RequireAuth><AppShell /></RequireAuth>}>
