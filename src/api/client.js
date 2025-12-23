@@ -4,11 +4,14 @@
  */
 
 // Resolve API base from env and normalize by stripping trailing slashes
+const defaultBase = typeof window !== 'undefined' ? window.location.origin : '';
 const RAW_API_BASE =
   import.meta.env.VITE_API_BASE ||
   import.meta.env.VITE_API_BASE_URL ||
-  'http://localhost:4000';
-const API_BASE = String(RAW_API_BASE).replace(/\/+$/, '');
+  defaultBase;
+const API_BASE = String(RAW_API_BASE || '').replace(/\/+$/, '');
+
+export const getApiBase = () => API_BASE;
 
 /**
  * Generic fetch wrapper with error handling
@@ -100,6 +103,14 @@ export async function generateCode(prompt, context = {}) {
 }
 
 /**
+ * Metrics summary
+ * GET /api/v1/metrics
+ */
+export async function fetchMetrics() {
+  return fetchAPI('/api/v1/metrics');
+}
+
+/**
  * Simulations
  * POST /api/v1/simulations/run
  */
@@ -114,10 +125,21 @@ export async function runSimulation(simulationConfig) {
  * Export to BASE44
  * POST /api/platform/export
  */
-export async function exportToPlatform(appSpec, options = {}) {
+export async function exportToPlatform(appSpec, options = {}, target = 'base44') {
   return fetchAPI('/api/platform/export', {
     method: 'POST',
-    body: JSON.stringify({ appSpec, options }),
+    body: JSON.stringify({ appSpec, target, options }),
+  });
+}
+
+/**
+ * Import BASE44 manifest
+ * POST /api/platform/import
+ */
+export async function importFromPlatform(payload) {
+  return fetchAPI('/api/platform/import', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
 }
 
@@ -129,6 +151,8 @@ export default {
   fetchTemplates,
   orchestrateAgents,
   generateCode,
+  fetchMetrics,
   runSimulation,
   exportToPlatform,
+  importFromPlatform,
 };

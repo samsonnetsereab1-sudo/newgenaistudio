@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { exportToPlatform, fetchMetrics as fetchMetricsApi, getApiBase, importFromPlatform } from './api/client';
 import Landing from './pages/Landing';
 import Portfolio from './pages/Portfolio';
 import RequireAuth from './auth/RequireAuth';
@@ -199,8 +200,17 @@ function BuildPage() {
   const [exportFormat, setExportFormat] = useState('base44');
   const fileInputRef = React.useRef(null);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugInfo, setDebugInfo] = useState(null);
+  const [polishMode, setPolishMode] = useState(false);
+  const [phases, setPhases] = useState([
+    { id: 'prep', label: 'Prep request', status: 'pending' },
+    { id: 'ai', label: 'AI generation', status: 'pending' },
+    { id: 'validate', label: 'Validation', status: 'pending' },
+    { id: 'render', label: 'Render', status: 'pending' }
+  ]);
 
-  const API_BASE = import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+  const apiBase = getApiBase();
   const isGenerating = status === 'loading';
 
   React.useEffect(() => {
@@ -210,16 +220,14 @@ function BuildPage() {
   const fetchMetrics = React.useCallback(async () => {
     setMetricsStatus('loading');
     try {
-      const res = await fetch(`${API_BASE}/api/v1/metrics`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await fetchMetricsApi();
       setMetrics(data.metrics || null);
       setMetricsStatus('success');
     } catch (e) {
       console.warn('Metrics fetch failed:', e.message);
       setMetricsStatus('error');
     }
-  }, [API_BASE]);
+  }, []);
 
   React.useEffect(() => {
     fetchMetrics().catch(() => {});
@@ -242,38 +250,84 @@ function BuildPage() {
     return () => clearInterval(interval);
   }, [isGenerating, generationStartTime]);
 
+  const resetPhases = React.useCallback(() => {
+    setPhases([
+      { id: 'prep', label: 'Prep request', status: 'active' },
+      { id: 'ai', label: 'AI generation', status: 'pending' },
+      { id: 'validate', label: 'Validation', status: 'pending' },
+      { id: 'render', label: 'Render', status: 'pending' }
+    ]);
+  }, []);
+
+  const setPhaseStatus = React.useCallback((id, status) => {
+    setPhases(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+  }, []);
+
+  const advancePhase = React.useCallback((fromId, toId) => {
+    setPhases(prev => prev.map(p => {
+      if (p.id === fromId) return { ...p, status: 'done' };
+      if (p.id === toId) return { ...p, status: 'active' };
+      return p;
+    }));
+  }, []);
+
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
     const HARD_TIMEOUT_MS = 90000; // Allow up to 90s for backend AI calls (domain-complete generation)
 
+    resetPhases();
     setStatus('loading');
     setSlowHint(false);
     setProblems([]);
     setMode(null);
     setElapsed(0);
     setGenerationStartTime(Date.now());
+    setDebugInfo(null); // Clear previous debug info
 
     const slowHintTimer = setTimeout(() => setSlowHint(true), 5000); // Show hint after 5s
     const controller = new AbortController();
     const hardTimer = setTimeout(() => controller.abort(), HARD_TIMEOUT_MS);
     
+    const requestPayload = { prompt, currentApp: polishMode ? generatedApp : null, mode: polishMode ? 'polish' : 'generate' };
+    const requestStartTime = Date.now();
+    advancePhase('prep', 'ai');
+    
     try {
-      const resp = await fetch(`${API_BASE}/api/generate`, {
+      const resp = await fetch(`${apiBase}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, currentApp: generatedApp }),
+        body: JSON.stringify(requestPayload),
         signal: controller.signal
       });
+      const requestDuration = Date.now() - requestStartTime;
+      
       clearTimeout(hardTimer);
       clearTimeout(slowHintTimer);
       setSlowHint(false);
       
       if (!resp.ok) {
+        setPhaseStatus('ai', 'error');
         throw new Error(`Server returned ${resp.status}`);
       }
       
       const result = await resp.json();
       console.log('Generation result:', result);
+
+      setPhaseStatus('ai', 'done');
+      setPhaseStatus('validate', 'active');
+
+      // Capture debug metadata for debug mode
+      const capturedDebug = {
+        requestUrl: `${apiBase}/api/generate`,
+        requestPayload,
+        requestDuration,
+        responseStatus: resp.status,
+        responseMode: result.mode,
+        responseProblems: result.problems || [],
+        rawSpec: result,
+        timestamp: new Date().toISOString()
+      };
+      setDebugInfo(capturedDebug);
 
       // Capture metrics snapshot when present (dev-only from backend)
       if (result?.meta?.metrics) {
@@ -289,6 +343,8 @@ function BuildPage() {
       setMode(result.mode || 'generated');
       setProblems(result.problems || []);
       setStatus('success');
+      setPhaseStatus('validate', 'done');
+      setPhaseStatus('render', 'done');
       
       if (hasProblems || result.status === 'error') {
         // Has errors or fallback was used
@@ -314,6 +370,17 @@ function BuildPage() {
         ? 'Generation took longer than 90s. Try a simpler prompt or check Status page for backend health.'
         : `Error: ${err.message}`;
       
+      setPhases(prev => prev.map(p => p.status === 'active' ? { ...p, status: 'error' } : p));
+
+      // Capture error in debug info
+      setDebugInfo({
+        requestUrl: `${apiBase}/api/generate`,
+        requestPayload,
+        requestDuration: Date.now() - requestStartTime,
+        error: errorMsg,
+        timestamp: new Date().toISOString()
+      });
+      
       setProblems([{
         severity: 'error',
         message: errorMsg
@@ -332,13 +399,11 @@ function BuildPage() {
     if (!generatedApp) return;
     setExportStatus('loading');
     try {
-      const res = await fetch(`${API_BASE}/api/platform/export`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appSpec: generatedApp, target: exportFormat === 'base44' ? 'base44' : 'raw', options: { domain: 'pharma' } })
-      });
-      if (!res.ok) throw new Error(`Export failed: ${res.status}`);
-      const data = await res.json();
+      const data = await exportToPlatform(
+        generatedApp,
+        { domain: 'pharma' },
+        exportFormat === 'base44' ? 'base44' : 'raw'
+      );
       
       // Download manifest as JSON
       const payload = exportFormat === 'base44' ? data.manifest : generatedApp;
@@ -383,13 +448,11 @@ function BuildPage() {
     try {
       const text = await file.text();
       const manifest = JSON.parse(text);
-      const resp = await fetch(`${API_BASE}/api/platform/import`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source: 'base44', manifest, projectName: manifest?.project?.name || 'Imported Project' })
+      const data = await importFromPlatform({
+        source: 'base44',
+        manifest,
+        projectName: manifest?.project?.name || 'Imported Project'
       });
-      if (!resp.ok) throw new Error(`Import failed: ${resp.status}`);
-      const data = await resp.json();
       const frontend = data.frontend || null;
       if (!frontend || !Array.isArray(frontend.children)) {
         setProblems([{ severity: 'error', message: 'Import succeeded but AppSpec conversion failed.' }]);
@@ -459,6 +522,50 @@ function BuildPage() {
           >
             {isGenerating ? `Generating... (${elapsed}s)` : 'Generate App'}
           </button>
+          
+          {/* Polish + Debug Mode */}
+          <div style={{ display: 'flex', gap: '8px', marginTop: '10px', alignItems: 'center' }}>
+            <button 
+              onClick={() => { setPolishMode(!polishMode); }}
+              style={{ 
+                flex: 1,
+                padding: '10px', 
+                background: polishMode ? '#10b981' : '#f8fafc', 
+                color: polishMode ? 'white' : '#0f172a', 
+                border: polishMode ? '1px solid #059669' : '1px solid #e2e8f0', 
+                borderRadius: '10px', 
+                fontWeight: 600, 
+                cursor: 'pointer',
+                fontSize: '13px'
+              }}
+              disabled={!generatedApp}
+              title={polishMode ? "Refinement mode ON - next generate will build on current app" : "Turn on to iteratively polish current app"}
+            >
+              {polishMode ? '✨ Polish Mode ON' : '🎯 Polish Mode'}
+            </button>
+            <button 
+              onClick={() => setDebugMode(!debugMode)}
+              style={{ 
+                flex: 1,
+                padding: '10px', 
+                background: debugMode ? '#f59e0b' : '#f8fafc', 
+                color: debugMode ? 'white' : '#64748b', 
+                border: debugMode ? '1px solid #d97706' : '1px solid #e2e8f0', 
+                borderRadius: '10px', 
+                fontWeight: 600, 
+                cursor: 'pointer',
+                fontSize: '13px'
+              }}
+            >
+              {debugMode ? '🐛 Debug ON' : '🔍 Debug'}
+            </button>
+          </div>
+
+          <div style={{ marginTop: '10px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Status phases</div>
+            <PhaseTimeline phases={phases} />
+          </div>
+          
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
             <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value)} style={{ padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#0f172a', fontWeight: 600 }}>
               <option value="base44">Export: BASE44</option>
@@ -529,6 +636,7 @@ function BuildPage() {
               </div>
             )}
           </div>
+          
         </div>
         
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '320px', background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 14px 40px rgba(15,23,42,0.05)', position: 'relative', overflow: 'hidden' }}>
@@ -566,6 +674,70 @@ function BuildPage() {
           to { transform: rotate(360deg); }
         }
       `}</style>
+
+      <DebugDrawer open={debugMode} info={debugInfo} phases={phases} />
+    </div>
+  );
+}
+
+function PhaseTimeline({ phases }) {
+  const statusStyle = (status) => {
+    switch (status) {
+      case 'done':
+        return { background: '#dcfce7', borderColor: '#bbf7d0', color: '#166534' };
+      case 'active':
+        return { background: '#e0e7ff', borderColor: '#c7d2fe', color: '#4338ca' };
+      case 'error':
+        return { background: '#fee2e2', borderColor: '#fecaca', color: '#991b1b' };
+      default:
+        return { background: '#f8fafc', borderColor: '#e2e8f0', color: '#475569' };
+    }
+  };
+
+  return (
+    <div style={{ display: 'grid', gap: '6px', marginTop: '10px' }}>
+      {phases.map((phase) => (
+        <div key={phase.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: '10px', border: '1px solid #e2e8f0', ...statusStyle(phase.status) }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
+            <span>{phase.status === 'done' ? '✅' : phase.status === 'active' ? '⏳' : phase.status === 'error' ? '⚠️' : '•'}</span>
+            <span>{phase.label}</span>
+          </div>
+          <span style={{ fontSize: '11px', fontWeight: 600 }}>{phase.status}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DebugDrawer({ open, info, phases }) {
+  if (!open || !info) return null;
+
+  const copy = () => navigator.clipboard.writeText(JSON.stringify(info, null, 2));
+
+  return (
+    <div style={{ position: 'fixed', right: '16px', bottom: '16px', width: '360px', maxHeight: '70vh', overflow: 'auto', background: 'white', border: '1px solid #e2e8f0', boxShadow: '0 20px 50px rgba(15,23,42,0.15)', borderRadius: '14px', padding: '14px', zIndex: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <div style={{ fontWeight: 800, color: '#0f172a' }}>Debug drawer</div>
+        <button onClick={copy} style={{ border: '1px solid #e2e8f0', background: '#f8fafc', borderRadius: '8px', padding: '6px 10px', fontSize: '12px', cursor: 'pointer', color: '#475569' }}>Copy JSON</button>
+      </div>
+      <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.6 }}>
+        <div><strong>URL:</strong> {info.requestUrl}</div>
+        <div><strong>Duration:</strong> {info.requestDuration}ms</div>
+        <div><strong>Status:</strong> {info.responseStatus || info.error || 'N/A'}</div>
+        <div><strong>Mode:</strong> {info.responseMode || info.requestPayload?.mode || 'N/A'}</div>
+      </div>
+      <div style={{ marginTop: '10px' }}>
+        <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>Phases</div>
+        <PhaseTimeline phases={phases} />
+      </div>
+      <details style={{ marginTop: '10px' }}>
+        <summary style={{ cursor: 'pointer', fontWeight: 700, color: '#111827' }}>Response</summary>
+        <pre style={{ marginTop: '6px', padding: '8px', background: '#0f172a', color: '#e2e8f0', borderRadius: '8px', fontSize: '11px', maxHeight: '200px', overflow: 'auto' }}>{JSON.stringify(info.rawSpec, null, 2)}</pre>
+      </details>
+      <details style={{ marginTop: '8px' }}>
+        <summary style={{ cursor: 'pointer', fontWeight: 700, color: '#111827' }}>Request</summary>
+        <pre style={{ marginTop: '6px', padding: '8px', background: '#0f172a', color: '#e2e8f0', borderRadius: '8px', fontSize: '11px', maxHeight: '160px', overflow: 'auto' }}>{JSON.stringify(info.requestPayload, null, 2)}</pre>
+      </details>
     </div>
   );
 }

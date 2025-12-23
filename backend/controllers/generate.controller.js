@@ -559,6 +559,151 @@ async function callAIWithRetry(prompt, currentApp, orchestration, retriesLeft) {
  * @returns {Promise<object>} AppSpec
  */
 async function callAIWithTimeout(prompt, attempt, maxRetries) {
+  // DEMO_MODE: Return rich placeholder data for local testing
+  if (process.env.DEMO_MODE === 'true') {
+    console.log('[Gen] 🎬 DEMO_MODE enabled - returning rich placeholder spec');
+    const isBiologics = prompt.toLowerCase().includes('sample') || prompt.toLowerCase().includes('batch') || prompt.toLowerCase().includes('biologics');
+    
+    if (isBiologics) {
+      // Rich biologics demo for sample management, batch tracking, etc.
+      const layout = {
+        id: 'layout-demo-biologics',
+        name: 'Sample Management (Demo)',
+        domain: 'pharma',
+        nodes: [
+          {
+            id: 'page-samples',
+            type: 'page',
+            props: { title: 'Sample Tracking' },
+            children: [
+              {
+                id: 'sec-active-samples',
+                type: 'section',
+                props: { title: 'Active Samples' },
+                children: [
+                  {
+                    id: 'tbl-samples',
+                    type: 'table',
+                    props: { 
+                      title: 'All Samples',
+                      columns: ['Sample ID', 'Project', 'Matrix', 'Status', 'Chain of Custody', 'Actions']
+                    }
+                  },
+                  {
+                    id: 'btn-new-sample',
+                    type: 'button',
+                    props: { label: 'New Sample', variant: 'primary' }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            id: 'page-chain-of-custody',
+            type: 'page',
+            props: { title: 'Chain of Custody' },
+            children: [
+              {
+                id: 'sec-custody',
+                type: 'section',
+                props: { title: 'Sample Custody Events' },
+                children: [
+                  {
+                    id: 'tbl-custody',
+                    type: 'table',
+                    props: {
+                      title: 'Custody Log',
+                      columns: ['Sample ID', 'From', 'To', 'Date', 'Condition', 'Notes']
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            id: 'page-audit-trail',
+            type: 'page',
+            props: { title: 'Audit Trail' },
+            children: [
+              {
+                id: 'sec-audit',
+                type: 'section',
+                props: { title: '21 CFR Part 11 Compliance Log' },
+                children: [
+                  {
+                    id: 'tbl-audit',
+                    type: 'table',
+                    props: {
+                      title: 'Audit Events',
+                      columns: ['Timestamp', 'User', 'Action', 'Record', 'Details']
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+
+      return {
+        status: 'ok',
+        mode: 'demo',
+        version: '2.0',
+        domain: 'pharma',
+        layout,
+        children: layout.nodes, // renderer expects children at root
+        files: {
+          'App.jsx': '// Demo: Sample Management LIMS\nexport default function App() { return <div>Sample Management Demo</div>; }'
+        }
+      };
+    }
+    
+    // Generic demo for other prompts
+    const layout = {
+      id: 'layout-demo-generic',
+      name: 'Generic App (Demo)',
+      domain: 'generic',
+      nodes: [
+        {
+          id: 'page-list',
+          type: 'page',
+          props: { title: 'Items' },
+          children: [
+            {
+              id: 'sec-items',
+              type: 'section',
+              props: { title: 'All Items' },
+              children: [
+                {
+                  id: 'tbl-items',
+                  type: 'table',
+                  props: { title: 'Records', columns: ['ID', 'Name', 'Status'] }
+                },
+                {
+                  id: 'btn-add',
+                  type: 'button',
+                  props: { label: 'Add Item', variant: 'primary' }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    return {
+      status: 'ok',
+      mode: 'demo',
+      version: '2.0',
+      domain: 'generic',
+      layout,
+      children: layout.nodes,
+      files: {
+        'App.jsx': '// Demo: Generic CRUD\nexport default function App() { return <div>Demo App</div>; }'
+      }
+    };
+  }
+  
   // Check if this prompt should use OpenAI (domain-heavy prompts)
   const useOpenAI = shouldUseOpenAI(prompt);
   const provider = useOpenAI ? 'openai' : (process.env.UI_PROVIDER || 'gemini');

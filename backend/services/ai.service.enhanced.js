@@ -359,27 +359,27 @@ body {
 }
 
 export const runAI = async (prompt) => {
-  // DISABLED DEMO_MODE - ALWAYS USE REAL AI
-  // if (process.env.DEMO_MODE === 'true') {
-  //   console.warn('[AI Service] Running in DEMO_MODE - returning placeholder spec');
-  //   const isBiologics = isBiologicsPrompt(prompt);
-  //   const files = isBiologics ? generateBiologicsApp(prompt) : generateGeneralApp(prompt);
-  //   const layout = isBiologics ? buildBiologicsLayout(prompt) : buildGeneralLayout(prompt);
-  //   
-  //   return {
-  //     status: 'ok',
-  //     mode: 'demo',
-  //     files,
-  //     layout,
-  //     schema: layout,
-  //     messages: [
-  //       { 
-  //         role: 'assistant', 
-  //         content: '⚠️ DEMO MODE: This is placeholder data. Set DEMO_MODE=false and configure OPENAI_API_KEY for real generation.'
-  //       }
-  //     ]
-  //   };
-  // }
+  // DEMO_MODE - Return rich placeholder for local testing
+  if (process.env.DEMO_MODE === 'true') {
+    console.warn('[AI Service] Running in DEMO_MODE - returning placeholder spec');
+    const isBiologics = isBiologicsPrompt(prompt);
+    const files = isBiologics ? generateBiologicsApp(prompt) : generateGeneralApp(prompt);
+    const layout = isBiologics ? buildBiologicsLayout(prompt) : buildGeneralLayout(prompt);
+    
+    return {
+      status: 'ok',
+      mode: 'demo',
+      files,
+      layout,
+      schema: layout,
+      messages: [
+        { 
+          role: 'assistant', 
+          content: '⚠️ DEMO MODE: This is placeholder data. Set DEMO_MODE=false and configure OPENAI_API_KEY for real generation.'
+        }
+      ]
+    };
+  }
   
   // REAL AI GENERATION (OpenAI fallback if Gemini not used)
   if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your-api-key-here') {
