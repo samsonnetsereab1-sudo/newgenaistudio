@@ -244,7 +244,7 @@ function BuildPage() {
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
-    const HARD_TIMEOUT_MS = 60000; // Allow up to 60s for backend AI calls (Gemini/OpenAI + synthesis)
+    const HARD_TIMEOUT_MS = 90000; // Allow up to 90s for backend AI calls (domain-complete generation)
 
     setStatus('loading');
     setSlowHint(false);
@@ -253,7 +253,7 @@ function BuildPage() {
     setElapsed(0);
     setGenerationStartTime(Date.now());
 
-    const slowHintTimer = setTimeout(() => setSlowHint(true), 3000); // Show hint after 3s
+    const slowHintTimer = setTimeout(() => setSlowHint(true), 5000); // Show hint after 5s
     const controller = new AbortController();
     const hardTimer = setTimeout(() => controller.abort(), HARD_TIMEOUT_MS);
     
@@ -311,7 +311,7 @@ function BuildPage() {
 
       const isTimeout = err.name === 'AbortError' || err?.message === 'timeout';
       const errorMsg = isTimeout
-        ? 'The request took too long (60s cap). Please try again or try a simpler prompt.'
+        ? 'Generation took longer than 90s. Try a simpler prompt or check Status page for backend health.'
         : `Error: ${err.message}`;
       
       setProblems([{
@@ -431,6 +431,21 @@ function BuildPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.4fr', gap: '20px' }}>
         <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', boxShadow: '0 14px 40px rgba(15,23,42,0.06)' }}>
           <label style={{ display: 'block', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Prompt</label>
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+            {[
+              { label: 'Sample Management (LIMS)', prompt: 'Build a GMP-compliant sample management app with sample tracking, chain of custody, test results, and audit trail for biologics lab' },
+              { label: 'Biologics Batch Tracker', prompt: 'Create a batch tracking dashboard for biologics manufacturing with lot numbers, fermentation runs, quality checks, deviations, and batch genealogy' },
+              { label: 'Stability Study Dashboard', prompt: 'Design a stability study management system with study protocols, time points, sample pull schedules, storage conditions, and trend analysis for pharma products' }
+            ].map((preset, idx) => (
+              <button
+                key={idx}
+                onClick={() => setPrompt(preset.prompt)}
+                style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
           <textarea 
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -523,8 +538,11 @@ function BuildPage() {
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px', animation: 'spin 1s linear infinite' }}>⚙️</div>
                 <div style={{ fontSize: '16px', fontWeight: '600', color: '#1e1b4b', marginBottom: '8px' }}>Generating your app...</div>
-                <div style={{ fontSize: '14px', color: '#64748b' }}>
-                  {slowHint ? 'Still generating (can take up to 60s with complex prompts)...' : 'This may take up to 60 seconds'}
+                <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px' }}>
+                  {slowHint ? `Still generating (${elapsed}s elapsed, can take up to 90s)...` : `Elapsed: ${elapsed}s (up to 90s)`}
+                </div>
+                <div style={{ width: '100%', maxWidth: '300px', height: '6px', background: '#e2e8f0', borderRadius: '999px', margin: '0 auto', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', width: `${Math.min((elapsed / 90) * 100, 100)}%`, transition: 'width 0.3s ease', borderRadius: '999px' }} />
                 </div>
               </div>
             ) : problems.length > 0 ? (

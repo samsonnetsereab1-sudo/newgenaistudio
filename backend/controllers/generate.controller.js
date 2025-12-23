@@ -19,8 +19,8 @@ const __dirname = path.dirname(__filename);
 const INVALID_SPEC_DIR = path.join(__dirname, '..', 'invalid-specs');
 
 const MAX_RETRIES = 1;  // 1 retry = 2 attempts total
-const BACKEND_TIMEOUT_MS = 55000;  // 55s total backend timeout to stay under frontend 60s cap
-const AI_TIMEOUT_MS = 45000;  // 45s max for AI call (allow full Gemini/OpenAI response time)
+const BACKEND_TIMEOUT_MS = 85000;  // 85s total backend timeout to stay under frontend 90s cap
+const AI_TIMEOUT_MS = 75000;  // 75s max for AI call (allow full domain-rich generation)
 const TEMPLATE_ONLY = process.env.TEMPLATE_ONLY === 'true';  // Skip AI entirely if true
 const SOFT_VALIDATION = process.env.NODE_ENV !== 'production';  // Dev mode: soften validation errors
 
