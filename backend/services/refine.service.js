@@ -5,12 +5,24 @@
 
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Lazy initialization of OpenAI client
+let openaiClient = null;
+function getOpenAIClient() {
+  if (!openaiClient && process.env.OPENAI_API_KEY) {
+    openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return openaiClient;
+}
 
 /**
  * Generate a patch to apply user's refinement instructions
  */
 export async function generateRefinePatch(currentSpec, instructions) {
+  const openai = getOpenAIClient();
+  if (!openai) {
+    throw new Error('OpenAI API key not configured');
+  }
+  
   const systemPrompt = `You are an expert at refining application specifications.
 
 Given the current AppSpec and user's refinement instructions, generate a JSON patch that describes the changes.
