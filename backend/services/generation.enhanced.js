@@ -6,7 +6,7 @@
 
 import { detectTemplate, getDynamicTemplate } from './templates.dynamic.js';
 import { generateAppSpecWithGemini } from './llm/geminiClient.js';
-import { generateWithOpenAI } from './ai.service.staged.js';
+import { generateStaged } from './ai.service.staged.js';
 import { validateAppSpecWithState } from '../schemas/appspec.state.schema.js';
 
 const USE_OPENAI = process.env.UI_PROVIDER === 'openai' && process.env.OPENAI_API_KEY;
@@ -63,11 +63,7 @@ export async function generateDynamic(prompt, context = {}) {
     if (USE_OPENAI) {
       try {
         console.log('[Generation Enhanced] Calling OpenAI...');
-        const result = await generateWithOpenAI(prompt, {
-          includeState: true,
-          includeActions: true,
-          ...context
-        });
+        const result = await generateStaged(prompt);
         
         // Convert OpenAI result to v2.0 format if needed
         return ensureV2Format(result);
