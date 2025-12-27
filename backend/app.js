@@ -11,6 +11,10 @@ import notFound from './middleware/notFound.js';
 import errorHandler from './middleware/errorHandler.js';
 console.log('4. Middleware imported');
 
+import { createAppAPI, getAppInstance } from './services/appRuntime.js';
+import { getApp } from './services/app.store.js';
+console.log('5. App runtime imported');
+
 const app = express();
 
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5175';
@@ -66,6 +70,35 @@ console.log('7. Mounting /api routes');
 // Removed request logging middleware to prevent crashes
 app.use('/api', routes);
 console.log('8. Routes mounted successfully');
+
+// Mount dynamic app APIs
+console.log('8.5. Mounting dynamic app APIs');
+app.use('/api/apps/:appId', (req, res, next) => {
+  const appId = req.params.appId;
+  
+  // Try to get app from runtime store first
+  let appInstance = getAppInstance(appId);
+  
+  // If not in runtime, try to get from app store
+  if (!appInstance) {
+    const appSpec = getApp(appId);
+    if (appSpec) {
+      // Create runtime API for this app
+      const appRouter = createAppAPI(appSpec);
+      return appRouter(req, res, next);
+    }
+  }
+  
+  // If app exists in runtime, use its router
+  if (appInstance) {
+    const appRouter = createAppAPI(appInstance.spec);
+    return appRouter(req, res, next);
+  }
+  
+  // App not found
+  next();
+});
+console.log('8.6. Dynamic app APIs mounted');
 
 // Root info route for convenience
 app.get('/', (req, res) => {
