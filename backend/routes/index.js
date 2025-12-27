@@ -15,6 +15,7 @@ import apps from './apps.routes.js';
 import test from './test.routes.js';
 import dev from './dev.routes.js';
 import metrics from './metrics.routes.js';
+import workflows from './workflows.routes.js';
 
 const router = express.Router();
 
@@ -32,6 +33,7 @@ router.use('/test', test); // Test endpoints for AI providers
 router.use('/dev', dev); // Development/debug endpoints
 router.use('/platform', platform);
 router.use('/v1/metrics', metrics); // Metrics summary
+router.use('/workflows', workflows); // Workflow execution
 console.log('🔧 [Routes Index] Mounting /generate route...');
 router.use('/generate', (req, res, next) => {
   console.log(`🚀 [Routes Index] /generate middleware hit: ${req.method} ${req.url}`);
