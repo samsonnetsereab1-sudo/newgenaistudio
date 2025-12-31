@@ -43,14 +43,98 @@ export const generateApp = async (req, res, next) => {
   
   try {
     console.log('\n========== NEW GENERATION REQUEST ==========');
-    const { prompt, currentApp } = req.body;
+    const { prompt, currentApp, inputMode = 'no-code', routingDecision = null } = req.body;
     console.log(`[Gen] Prompt: "${prompt?.substring(0, 80)}..."`);
+    console.log(`[Gen] Input Mode: ${inputMode}`);
     const stageTimings = {};
     let stageStart = Date.now();
     
     if (!prompt || typeof prompt !== 'string') {
       console.error('[Gen] ❌ Invalid prompt');
       return sendErrorResponse(res, 'prompt is required', []);
+    }
+
+    // Check if technical input mode (code/markup instead of natural language)
+    if (inputMode === 'technical') {
+      console.log('[Gen] 🔧 Technical mode detected - using adapter');
+      
+      // Try to adapt the input directly
+      const { adaptToNewGen } = await import('../adapters/gemini-to-newgen.js');
+      const adaptResult = await adaptToNewGen(prompt);
+      
+      if (adaptResult.success && adaptResult.appSpec) {
+        console.log('[Gen] ✅ Successfully adapted technical input to AppSpec');
+        
+        // Learn from this generation
+        const { learnFromGeneration } = await import('../learning/pattern-storage.js');
+        learnFromGeneration({
+          input: prompt,
+          appSpec: adaptResult.appSpec,
+          feedback: 'positive' // Technical input is high-quality learning
+        });
+        
+        // Convert to frontend format and return
+        const frontendResp = appSpecToFrontend(adaptResult.appSpec);
+        frontendResp.mode = 'adapted';
+        frontendResp.problems = adaptResult.validationErrors || [];
+        frontendResp.elapsed = Date.now() - startTime;
+        frontendResp.metadata = {
+          sourceFormat: adaptResult.format,
+          adaptedFromTechnical: true
+        };
+        
+        return res.json(frontendResp);
+      } else if (adaptResult.requiresAI) {
+        console.log('[Gen] Natural language detected in technical mode - proceeding with AI');
+        // Fall through to normal AI generation
+      } else {
+        console.error('[Gen] ❌ Adapter failed:', adaptResult.error);
+        return sendErrorResponse(res, `Adapter failed: ${adaptResult.error}`, []);
+      }
+    }
+
+    // Check for routing decision (from confirm-route endpoint)
+    if (!routingDecision) {
+      // Determine routing based on complexity
+      const { determineRoute } = await import('../routing/intelligent-router.js');
+      const routing = determineRoute(prompt);
+      
+      console.log(`[Gen] Routing analysis: ${routing.route} (confidence: ${routing.confidence}%)`);
+      console.log(`[Gen] Reasoning: ${routing.reasoning}`);
+      
+      // If requires confirmation, return routing decision to frontend
+      if (routing.requiresConfirmation) {
+        const { getRouteDetails } = await import('../routing/intelligent-router.js');
+        const directDetails = getRouteDetails('DIRECT', routing.confidence);
+        const comboDetails = getRouteDetails('TRIPLE_POWER_COMBO', 95);
+        
+        return res.json({
+          status: 'needs-confirmation',
+          routing: {
+            complexity: routing.complexity,
+            confidence: routing.confidence,
+            reasoning: routing.reasoning
+          },
+          options: [
+            {
+              route: 'DIRECT',
+              ...directDetails
+            },
+            {
+              route: 'TRIPLE_POWER_COMBO',
+              ...comboDetails
+            }
+          ],
+          message: 'Please choose generation method'
+        });
+      }
+      
+      // If Triple Power Combo auto-selected, mark it
+      if (routing.route === 'TRIPLE_POWER_COMBO') {
+        console.log('[Gen] 🔄 Auto-routing to Triple Power Combo');
+        // TODO: Implement Triple Power Combo workflow
+        // For now, proceed with standard generation
+      }
     }
 
     // Step 1: ORCHESTRATE (determine domain/intent)
@@ -445,6 +529,21 @@ export const generateApp = async (req, res, next) => {
       }
     } catch (mErr) {
       console.warn('[Gen] Metrics recording failed:', mErr.message);
+    }
+
+    // Learn from successful generation (background, non-blocking)
+    if (frontendResp.mode !== 'error' && spec.layout) {
+      try {
+        const { learnFromGeneration } = await import('../learning/pattern-storage.js');
+        learnFromGeneration({
+          input: prompt,
+          appSpec: spec,
+          feedback: 'neutral' // Will be updated when user provides feedback
+        });
+        console.log('[Gen] 🧠 Pattern learning recorded');
+      } catch (learnErr) {
+        console.warn('[Gen] Learning failed (non-critical):', learnErr.message);
+      }
     }
 
     console.log(`[Gen] ✅ Success (${frontendResp.elapsed}ms, mode=${frontendResp.mode})`);
