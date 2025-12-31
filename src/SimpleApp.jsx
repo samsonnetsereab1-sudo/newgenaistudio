@@ -7,6 +7,12 @@ import RequireAuth from './auth/RequireAuth';
 import WelcomeModal from './components/WelcomeModal';
 import StatusPage from './pages/StatusPage';
 import ComingSoon from './pages/ComingSoon';
+import ModeSelector from './components/ModeSelector';
+import FormatIndicator from './components/FormatIndicator';
+import RoutingModal from './components/RoutingModal';
+import ProgressDisplay from './components/ProgressDisplay';
+import FeedbackPrompt from './components/FeedbackPrompt';
+import LearningInsights from './components/LearningInsights';
 
 const ACCESS_CODE = 'newgen-beta';
 
@@ -97,6 +103,7 @@ function AppShell() {
   const navItems = [
     { label: 'Dashboard', path: '/app', icon: '📊' },
     { label: 'Build', path: '/app/build', icon: '⚗️' },
+    { label: 'Insights', path: '/app/insights', icon: '🧠' },
     { label: 'Status', path: '/app/status', icon: '🩺' },
     { label: 'Projects', path: '/app/projects', icon: '🧪' },
     { label: 'Templates', path: '/app/templates', icon: '🧬' },
@@ -210,6 +217,18 @@ function BuildPage() {
     { id: 'render', label: 'Render', status: 'pending' }
   ]);
 
+  // New state for dual-mode input
+  const [inputMode, setInputMode] = useState('no-code');
+  const [detectedFormat, setDetectedFormat] = useState(null);
+  const [formatConfidence, setFormatConfidence] = useState(0);
+  const [formatErrors, setFormatErrors] = useState([]);
+  const [showRoutingModal, setShowRoutingModal] = useState(false);
+  const [routingOptions, setRoutingOptions] = useState(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackTimer, setFeedbackTimer] = useState(null);
+  const [triplePowerSteps, setTriplePowerSteps] = useState([]);
+  const [showTripleProgress, setShowTripleProgress] = useState(false);
+
   const apiBase = getApiBase();
   const isGenerating = status === 'loading';
 
@@ -288,7 +307,12 @@ function BuildPage() {
     const controller = new AbortController();
     const hardTimer = setTimeout(() => controller.abort(), HARD_TIMEOUT_MS);
     
-    const requestPayload = { prompt, currentApp: polishMode ? generatedApp : null, mode: polishMode ? 'polish' : 'generate' };
+    const requestPayload = { 
+      prompt, 
+      currentApp: polishMode ? generatedApp : null, 
+      mode: polishMode ? 'polish' : 'generate',
+      inputMode  // Add input mode to request
+    };
     const requestStartTime = Date.now();
     advancePhase('prep', 'ai');
     
@@ -312,6 +336,21 @@ function BuildPage() {
       
       const result = await resp.json();
       console.log('Generation result:', result);
+
+      // Check if routing confirmation is needed
+      if (result.status === 'needs-confirmation') {
+        console.log('Routing confirmation needed');
+        clearTimeout(hardTimer);
+        clearTimeout(slowHintTimer);
+        setSlowHint(false);
+        setStatus('idle');
+        setGenerationStartTime(null);
+        
+        // Show routing modal
+        setRoutingOptions(result);
+        setShowRoutingModal(true);
+        return;
+      }
 
       setPhaseStatus('ai', 'done');
       setPhaseStatus('validate', 'active');
@@ -345,6 +384,14 @@ function BuildPage() {
       setStatus('success');
       setPhaseStatus('validate', 'done');
       setPhaseStatus('render', 'done');
+
+      // Start feedback timer (show feedback modal after 30 seconds)
+      if (hasChildren && !hasProblems) {
+        const timer = setTimeout(() => {
+          setShowFeedback(true);
+        }, 30000);
+        setFeedbackTimer(timer);
+      }
       
       if (hasProblems || result.status === 'error') {
         // Has errors or fallback was used
@@ -421,6 +468,92 @@ function BuildPage() {
     }
   };
 
+  const handleRouteChoice = async (route) => {
+    console.log('User chose route:', route);
+    setShowRoutingModal(false);
+    
+    // Call confirm-route endpoint
+    try {
+      setStatus('loading');
+      setGenerationStartTime(Date.now());
+      resetPhases();
+      
+      const resp = await fetch(`${apiBase}/api/generate/confirm-route`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          route,
+          inputMode
+        })
+      });
+      
+      const result = await resp.json();
+      
+      // Process result same as normal generation
+      setPhaseStatus('ai', 'done');
+      setPhaseStatus('validate', 'done');
+      setPhaseStatus('render', 'done');
+      
+      setMode(result.mode || 'generated');
+      setProblems(result.problems || []);
+      setStatus('success');
+      
+      const hasChildren = Array.isArray(result.children) && result.children.length > 0;
+      if (hasChildren) {
+        setGeneratedApp(result);
+        
+        // Start feedback timer
+        const timer = setTimeout(() => {
+          setShowFeedback(true);
+        }, 30000);
+        setFeedbackTimer(timer);
+      }
+      
+    } catch (err) {
+      console.error('Route confirmation error:', err);
+      setProblems([{ severity: 'error', message: err.message }]);
+      setStatus('error');
+    } finally {
+      setGenerationStartTime(null);
+    }
+  };
+
+  const handleFeedbackSubmit = async (rating) => {
+    console.log('Feedback submitted:', rating);
+    
+    try {
+      await fetch(`${apiBase}/api/generate/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appId: generatedApp?.id || Date.now().toString(),
+          rating,
+          comments: ''
+        })
+      });
+    } catch (err) {
+      console.error('Feedback submission error:', err);
+    }
+  };
+
+  const handleFeedbackSkip = () => {
+    setShowFeedback(false);
+    if (feedbackTimer) {
+      clearTimeout(feedbackTimer);
+      setFeedbackTimer(null);
+    }
+  };
+
+  // Cleanup feedback timer on unmount
+  React.useEffect(() => {
+    return () => {
+      if (feedbackTimer) {
+        clearTimeout(feedbackTimer);
+      }
+    };
+  }, [feedbackTimer]);
+
   const extractAppSpecFromManifest = (manifest) => {
     if (!manifest || typeof manifest !== 'object') return null;
     const candidates = [
@@ -493,6 +626,16 @@ function BuildPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.4fr', gap: '20px' }}>
         <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', boxShadow: '0 14px 40px rgba(15,23,42,0.06)' }}>
+          {/* Mode Selector */}
+          <ModeSelector mode={inputMode} onModeChange={setInputMode} />
+          
+          {/* Format Indicator (for technical mode) */}
+          <FormatIndicator 
+            format={detectedFormat} 
+            confidence={formatConfidence} 
+            errors={formatErrors} 
+          />
+          
           <label style={{ display: 'block', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Prompt</label>
           <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
             {[
@@ -512,8 +655,21 @@ function BuildPage() {
           <textarea 
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe your app..."
-            style={{ width: '100%', height: '200px', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', fontFamily: 'monospace', fontSize: '14px', resize: 'vertical', background: '#f8fafc' }}
+            placeholder={inputMode === 'no-code' 
+              ? "Describe your app in natural language..." 
+              : "Paste JSX, HTML, JSON, or component list..."}
+            style={{ 
+              width: '100%', 
+              height: inputMode === 'no-code' ? '150px' : '300px', 
+              padding: '12px', 
+              borderRadius: '12px', 
+              border: '1px solid #e2e8f0', 
+              fontFamily: inputMode === 'no-code' ? 'inherit' : 'monospace', 
+              fontSize: '14px', 
+              resize: 'vertical', 
+              background: '#f8fafc',
+              transition: 'all 0.3s ease'
+            }}
           />
           <button 
             onClick={handleGenerate}
@@ -674,6 +830,28 @@ function BuildPage() {
           to { transform: rotate(360deg); }
         }
       `}</style>
+
+      {/* Routing Confirmation Modal */}
+      {showRoutingModal && routingOptions && (
+        <RoutingModal
+          routing={routingOptions.routing}
+          options={routingOptions.options}
+          onChoose={handleRouteChoice}
+          onCancel={() => setShowRoutingModal(false)}
+        />
+      )}
+
+      {/* Feedback Prompt Modal */}
+      {showFeedback && (
+        <FeedbackPrompt
+          appId={generatedApp?.id || Date.now().toString()}
+          onSubmit={handleFeedbackSubmit}
+          onSkip={handleFeedbackSkip}
+        />
+      )}
+
+      {/* Triple Power Combo Progress */}
+      <ProgressDisplay steps={triplePowerSteps} visible={showTripleProgress} />
 
       <DebugDrawer open={debugMode} info={debugInfo} phases={phases} />
     </div>
@@ -854,6 +1032,7 @@ export default function SimpleApp() {
       <Route path="/app" element={<RequireAuth><AppShell /></RequireAuth>}>
         <Route index element={<Dashboard />} />
         <Route path="build" element={<BuildPage />} />
+        <Route path="insights" element={<LearningInsights />} />
         <Route path="status" element={<StatusPage />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="templates" element={<TemplatesPage />} />
