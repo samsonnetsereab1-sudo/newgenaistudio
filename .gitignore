@@ -23,6 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 backend/invalid-specs/
+backend/learned_patterns/
 
 # Environment variables (SECURITY: Never commit sensitive keys)
 backend/.env
