@@ -56,14 +56,27 @@ export const generateApp = async (req, res, next) => {
 
     // Check if technical input mode (code/markup instead of natural language)
     if (inputMode === 'technical') {
-      console.log('[Gen] 🔧 Technical mode detected - using adapter');
+      console.log('\n🔧 TECHNICAL MODE DETECTED');
+      
+      // Format detection
+      const { detectFormat } = await import('../adapters/format-detector.js');
+      const formatAnalysis = detectFormat(prompt);
+      
+      console.log('📋 FORMAT DETECTION:');
+      console.log(`   Format: ${formatAnalysis.format}`);
+      console.log(`   Confidence: ${Math.round(formatAnalysis.confidence * 100)}%`);
+      
+      if (formatAnalysis.format !== 'natural-language') {
+        console.log(`   Metadata:`, JSON.stringify(formatAnalysis.metadata, null, 2).substring(0, 200));
+      }
       
       // Try to adapt the input directly
       const { adaptToNewGen } = await import('../adapters/gemini-to-newgen.js');
       const adaptResult = await adaptToNewGen(prompt);
       
       if (adaptResult.success && adaptResult.appSpec) {
-        console.log('[Gen] ✅ Successfully adapted technical input to AppSpec');
+        console.log('✅ Successfully adapted technical input to AppSpec');
+        console.log(`   Source Format: ${adaptResult.format}`);
         
         // Learn from this generation
         const { learnFromGeneration } = await import('../learning/pattern-storage.js');
@@ -72,6 +85,7 @@ export const generateApp = async (req, res, next) => {
           appSpec: adaptResult.appSpec,
           feedback: 'positive' // Technical input is high-quality learning
         });
+        console.log('📚 Pattern stored for learning');
         
         // Convert to frontend format and return
         const frontendResp = appSpecToFrontend(adaptResult.appSpec);
@@ -80,27 +94,46 @@ export const generateApp = async (req, res, next) => {
         frontendResp.elapsed = Date.now() - startTime;
         frontendResp.metadata = {
           sourceFormat: adaptResult.format,
-          adaptedFromTechnical: true
+          adaptedFromTechnical: true,
+          formatDetection: formatAnalysis
         };
         
         return res.json(frontendResp);
       } else if (adaptResult.requiresAI) {
-        console.log('[Gen] Natural language detected in technical mode - proceeding with AI');
+        console.log('ℹ️  Natural language detected in technical mode - proceeding with AI generation');
         // Fall through to normal AI generation
       } else {
-        console.error('[Gen] ❌ Adapter failed:', adaptResult.error);
+        console.error('❌ Adapter failed:', adaptResult.error);
         return sendErrorResponse(res, `Adapter failed: ${adaptResult.error}`, []);
       }
     }
 
     // Check for routing decision (from confirm-route endpoint)
+    let routingAnalysis = null;
     if (!routingDecision) {
       // Determine routing based on complexity
-      const { determineRoute } = await import('../routing/intelligent-router.js');
+      const { determineRoute, analyzeComplexity } = await import('../routing/intelligent-router.js');
       const routing = determineRoute(prompt);
+      routingAnalysis = routing;
       
-      console.log(`[Gen] Routing analysis: ${routing.route} (confidence: ${routing.confidence}%)`);
-      console.log(`[Gen] Reasoning: ${routing.reasoning}`);
+      console.log(`\n🎯 INTELLIGENT ROUTING ANALYSIS`);
+      console.log(`   Route: ${routing.route}`);
+      console.log(`   Complexity Score: ${routing.complexity.score}/10`);
+      console.log(`   Confidence: ${routing.confidence}%`);
+      console.log(`   Reasoning: ${routing.reasoning}`);
+      console.log(`   Requires Confirmation: ${routing.requiresConfirmation}`);
+      
+      if (routing.complexity.detected) {
+        if (routing.complexity.detected.technicalTerms?.length > 0) {
+          console.log(`   📚 Technical Terms: ${routing.complexity.detected.technicalTerms.slice(0, 3).join(', ')}`);
+        }
+        if (routing.complexity.detected.customComponents?.length > 0) {
+          console.log(`   🔧 Custom Components: ${routing.complexity.detected.customComponents.slice(0, 3).join(', ')}`);
+        }
+        if (routing.complexity.detected.integrations?.length > 0) {
+          console.log(`   🔗 Integrations: ${routing.complexity.detected.integrations.slice(0, 3).join(', ')}`);
+        }
+      }
       
       // If requires confirmation, return routing decision to frontend
       if (routing.requiresConfirmation) {
@@ -131,10 +164,16 @@ export const generateApp = async (req, res, next) => {
       
       // If Triple Power Combo auto-selected, mark it
       if (routing.route === 'TRIPLE_POWER_COMBO') {
-        console.log('[Gen] 🔄 Auto-routing to Triple Power Combo');
+        console.log('🔥 TRIPLE POWER COMBO AUTO-SELECTED');
+        console.log('   High complexity detected - using enhanced AI pipeline');
         // TODO: Implement Triple Power Combo workflow
         // For now, proceed with standard generation
+      } else if (routing.route === 'DIRECT') {
+        console.log('⚡ DIRECT ROUTE SELECTED');
+        console.log('   Standard complexity - using direct generation');
       }
+    } else {
+      console.log(`\n🎯 USER-CONFIRMED ROUTE: ${routingDecision.route}`);
     }
 
     // Step 1: ORCHESTRATE (determine domain/intent)
@@ -538,15 +577,36 @@ export const generateApp = async (req, res, next) => {
         learnFromGeneration({
           input: prompt,
           appSpec: spec,
-          feedback: 'neutral' // Will be updated when user provides feedback
+          feedback: 'neutral', // Will be updated when user provides feedback
+          inputMode: inputMode,
+          complexity: routingAnalysis?.complexity?.score,
+          route: routingAnalysis?.route || routingDecision?.route
         });
-        console.log('[Gen] 🧠 Pattern learning recorded');
+        console.log('🧠 PATTERN LEARNING RECORDED');
+        if (routingAnalysis) {
+          console.log(`   Complexity: ${routingAnalysis.complexity.score}/10`);
+          console.log(`   Route: ${routingAnalysis.route}`);
+        }
       } catch (learnErr) {
         console.warn('[Gen] Learning failed (non-critical):', learnErr.message);
       }
     }
 
+    // Add routing metadata to response
+    if (routingAnalysis || routingDecision) {
+      frontendResp.metadata = frontendResp.metadata || {};
+      frontendResp.metadata.routing = {
+        complexity: routingAnalysis?.complexity?.score || 0,
+        route: routingAnalysis?.route || routingDecision?.route || 'DIRECT',
+        confidence: routingAnalysis?.confidence || 100,
+        reasoning: routingAnalysis?.reasoning || 'User confirmed route'
+      };
+    }
+
     console.log(`[Gen] ✅ Success (${frontendResp.elapsed}ms, mode=${frontendResp.mode})`);
+    if (routingAnalysis || routingDecision) {
+      console.log(`[Gen] 📊 Route: ${routingAnalysis?.route || routingDecision?.route}, Complexity: ${routingAnalysis?.complexity?.score || 'N/A'}/10`);
+    }
     res.json(frontendResp);
 
 
