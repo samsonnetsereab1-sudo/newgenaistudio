@@ -721,7 +721,128 @@ async function callAIWithTimeout(prompt, attempt, maxRetries) {
   // DEMO_MODE: Return rich placeholder data for local testing
   if (process.env.DEMO_MODE === 'true') {
     console.log('[Gen] 🎬 DEMO_MODE enabled - returning rich placeholder spec');
+    const isLoginForm = prompt.toLowerCase().includes('login') || prompt.toLowerCase().includes('form');
     const isBiologics = prompt.toLowerCase().includes('sample') || prompt.toLowerCase().includes('batch') || prompt.toLowerCase().includes('biologics');
+    
+    if (isLoginForm) {
+      // Demo with form elements to test form rendering
+      const layout = {
+        id: 'layout-demo-login',
+        name: 'Login Form (Demo)',
+        domain: 'generic',
+        nodes: [
+          {
+            id: 'page-login',
+            type: 'page',
+            props: { title: 'Login' },
+            children: [
+              {
+                id: 'sec-login-form',
+                type: 'section',
+                props: { title: 'Sign In' },
+                children: [
+                  {
+                    id: 'form-login',
+                    type: 'form',
+                    props: {},
+                    children: [
+                      {
+                        id: 'label-username',
+                        type: 'label',
+                        props: { text: 'Username', htmlFor: 'input-username' },
+                        children: []
+                      },
+                      {
+                        id: 'input-username',
+                        type: 'input',
+                        props: { type: 'text', placeholder: 'Enter your username', name: 'username' },
+                        children: []
+                      },
+                      {
+                        id: 'label-password',
+                        type: 'label',
+                        props: { text: 'Password', htmlFor: 'input-password' },
+                        children: []
+                      },
+                      {
+                        id: 'input-password',
+                        type: 'input',
+                        props: { type: 'password', placeholder: 'Enter your password', name: 'password' },
+                        children: []
+                      },
+                      {
+                        id: 'label-remember',
+                        type: 'label',
+                        props: { text: 'Remember me' },
+                        children: []
+                      },
+                      {
+                        id: 'input-remember',
+                        type: 'input',
+                        props: { type: 'checkbox', name: 'remember' },
+                        children: []
+                      },
+                      {
+                        id: 'label-message',
+                        type: 'label',
+                        props: { text: 'Message (optional)' },
+                        children: []
+                      },
+                      {
+                        id: 'textarea-message',
+                        type: 'textarea',
+                        props: { placeholder: 'Enter any additional message...', name: 'message' },
+                        children: []
+                      },
+                      {
+                        id: 'label-role',
+                        type: 'label',
+                        props: { text: 'Select Role' },
+                        children: []
+                      },
+                      {
+                        id: 'select-role',
+                        type: 'select',
+                        props: { name: 'role' },
+                        children: [
+                          '<option value="user">User</option>',
+                          '<option value="admin">Admin</option>',
+                          '<option value="manager">Manager</option>'
+                        ]
+                      },
+                      {
+                        id: 'btn-submit',
+                        type: 'button',
+                        props: { label: 'Submit', type: 'submit' },
+                        children: []
+                      },
+                      {
+                        id: 'btn-cancel',
+                        type: 'button',
+                        props: { label: 'Cancel', type: 'button', style: { background: '#94a3b8' } },
+                        children: []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+
+      return {
+        status: 'ok',
+        mode: 'demo',
+        version: '2.0',
+        domain: 'generic',
+        layout,
+        children: layout.nodes,
+        files: {
+          'App.jsx': '// Demo: Login Form\nexport default function App() { return <div>Login Form Demo</div>; }'
+        }
+      };
+    }
     
     if (isBiologics) {
       // Rich biologics demo for sample management, batch tracking, etc.
