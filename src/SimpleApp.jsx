@@ -998,6 +998,107 @@ function RenderApp({ app }) {
           </div>
         );
       
+      case 'form':
+        return (
+          <form key={id} {...props} style={{ marginBottom: '16px', ...props.style }}>
+            {children.map((child, idx) => <div key={idx}>{renderNode(child)}</div>)}
+          </form>
+        );
+      
+      case 'input':
+        return (
+          <input
+            key={id}
+            {...props}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '6px',
+              border: '1px solid #e2e8f0',
+              fontSize: '14px',
+              marginBottom: '12px',
+              ...props.style
+            }}
+          />
+        );
+      
+      case 'textarea':
+        return (
+          <textarea
+            key={id}
+            {...props}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '6px',
+              border: '1px solid #e2e8f0',
+              fontSize: '14px',
+              marginBottom: '12px',
+              minHeight: '100px',
+              resize: 'vertical',
+              ...props.style
+            }}
+          />
+        );
+      
+      case 'select':
+        return (
+          <select
+            key={id}
+            {...props}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '6px',
+              border: '1px solid #e2e8f0',
+              fontSize: '14px',
+              marginBottom: '12px',
+              ...props.style
+            }}
+          >
+            {children}
+          </select>
+        );
+      
+      case 'button':
+        return (
+          <button
+            key={id}
+            {...props}
+            style={{
+              padding: '10px 16px',
+              borderRadius: '6px',
+              border: 'none',
+              background: '#6366f1',
+              color: 'white',
+              fontWeight: '600',
+              cursor: 'pointer',
+              marginRight: '8px',
+              ...props.style
+            }}
+          >
+            {props.label || props.children || 'Button'}
+          </button>
+        );
+      
+      case 'label':
+        return (
+          <label
+            key={id}
+            {...props}
+            style={{
+              display: 'block',
+              marginBottom: '6px',
+              fontWeight: '600',
+              color: '#0f172a',
+              fontSize: '14px',
+              ...props.style
+            }}
+          >
+            {props.text || props.children || ''}
+          </label>
+        );
+      
       default:
         return (
           <div key={id} style={{ background: '#f1f5f9', padding: '12px', borderRadius: '6px', marginBottom: '8px', fontSize: '13px' }}>
