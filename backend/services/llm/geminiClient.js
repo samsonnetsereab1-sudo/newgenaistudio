@@ -4,6 +4,7 @@
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { geminiQueue } from './requestQueue.js';
 
 if (!process.env.GEMINI_API_KEY) {
   console.warn('[Gemini] GEMINI_API_KEY not configured');
@@ -12,6 +13,60 @@ if (!process.env.GEMINI_API_KEY) {
 const genAI = process.env.GEMINI_API_KEY 
   ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
   : null;
+
+// Rate limiting configuration
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
+const MAX_DELAY_MS = 32000;
+
+/**
+ * Exponential backoff with jitter
+ */
+function sleep(ms, addJitter = true) {
+  const jitter = addJitter ? Math.random() * 1000 : 0;
+  return new Promise(resolve => setTimeout(resolve, ms + jitter));
+}
+
+/**
+ * Calculate backoff delay for retry attempts
+ */
+function getBackoffDelay(attempt) {
+  return Math.min(BASE_DELAY_MS * Math.pow(2, attempt), MAX_DELAY_MS);
+}
+
+/**
+ * Smart error detection for Gemini API errors
+ */
+function handleGeminiError(error, attempt, maxRetries) {
+  const errorString = error.toString();
+  const errorMessage = error.message || '';
+  
+  // 429 Rate Limit - RETRY
+  if (errorString.includes('429') || errorString.includes('RATE_LIMIT') || 
+      errorString.includes('quota') || errorMessage.includes('429') ||
+      errorMessage.includes('RATE_LIMIT') || errorMessage.includes('quota')) {
+    console.warn(`[Gemini] ⚠️ Rate limit hit (attempt ${attempt}/${maxRetries})`);
+    return { shouldRetry: true, isRateLimit: true };
+  }
+  
+  // 400 Bad Request - DON'T RETRY
+  if (errorString.includes('400') || errorString.includes('invalid') ||
+      errorMessage.includes('400') || errorMessage.includes('invalid')) {
+    console.error(`[Gemini] ❌ Bad Request (400) - check payload`);
+    return { shouldRetry: false, isBadRequest: true };
+  }
+  
+  // Network errors - RETRY
+  if (errorString.includes('timeout') || errorString.includes('ECONNRESET') ||
+      errorString.includes('ETIMEDOUT') || errorString.includes('ENOTFOUND') ||
+      errorMessage.includes('timeout') || errorMessage.includes('ECONNRESET') ||
+      errorMessage.includes('ETIMEDOUT') || errorMessage.includes('ENOTFOUND')) {
+    console.warn(`[Gemini] ⚠️ Network error (attempt ${attempt}/${maxRetries})`);
+    return { shouldRetry: true, isNetworkError: true };
+  }
+  
+  return { shouldRetry: false, isUnknown: true };
+}
 
 const APPSPEC_REPAIR_INSTRUCTION = `You are a JSON repair agent for NewGen Studio AppSpec.
 
@@ -132,82 +187,113 @@ export async function generateAppSpecWithGemini(prompt) {
     throw new Error('Gemini not configured. Set GEMINI_API_KEY in .env');
   }
 
-  try {
-    console.log('[Gemini] Generating AppSpec for prompt:', prompt.substring(0, 100));
+  return geminiQueue.add(async () => {
+    let lastError;
+    
+    // Retry loop with exponential backoff
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        console.log(`[Gemini] 🚀 Attempt ${attempt + 1}/${MAX_RETRIES} - Generating AppSpec for prompt:`, prompt.substring(0, 100));
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 8192,
-        responseMimeType: 'application/json'
-      },
-      systemInstruction: APPSPEC_SYSTEM_INSTRUCTION
-    });
+        const model = genAI.getGenerativeModel({
+          model: 'gemini-2.0-flash-exp',
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 8192,
+            responseMimeType: 'application/json'
+          },
+          systemInstruction: APPSPEC_SYSTEM_INSTRUCTION
+        });
 
-    // Note: Controller-level timeout is enforced at callAIWithTimeout()
-    // Do NOT enforce timeout here - let the controller manage it
-    const generatePromise = model.generateContent(`Generate a complete AppSpec for: ${prompt}
+        // Note: Controller-level timeout is enforced at callAIWithTimeout()
+        // Do NOT enforce timeout here - let the controller manage it
+        const generatePromise = model.generateContent(`Generate a complete AppSpec for: ${prompt}
 
   REQUIREMENTS:
   - Include top-level agents[] and workflows[] when the prompt mentions agents/workflows/states.
   - Ensure schema.entities[0] defines states with allowedActions and references involved agents.
   - Use the exact agent names, state names, and workflow names provided in the prompt.`);
-    const result = await generatePromise;
-    const response = result.response;
-    const text = response.text();
+        const result = await generatePromise;
+        const response = result.response;
+        const text = response.text();
 
-    console.log('[Gemini] Raw response length:', text.length);
+        console.log('[Gemini] ✅ Raw response received, length:', text.length);
 
-    // Parse and validate JSON
-    let appSpec;
-    try {
-      appSpec = JSON.parse(text);
-    } catch (parseError) {
-      console.error('[Gemini] JSON parse error:', parseError.message);
-      console.error('[Gemini] Raw text:', text.substring(0, 500));
-      throw new Error('Gemini returned invalid JSON');
+        // Parse and validate JSON
+        let appSpec;
+        try {
+          appSpec = JSON.parse(text);
+        } catch (parseError) {
+          console.error('[Gemini] JSON parse error:', parseError.message);
+          console.error('[Gemini] Raw text:', text.substring(0, 500));
+          throw new Error('Gemini returned invalid JSON');
+        }
+
+        // Ensure required top-level fields
+        if (!appSpec.metadata) {
+          appSpec.metadata = {
+            name: 'Generated App',
+            description: 'Generated by Gemini',
+            domain: 'generic'
+          };
+        }
+
+        if (!appSpec.version) {
+          appSpec.version = '2.0';
+        }
+
+        if (!appSpec.mode) {
+          appSpec.mode = 'generated';
+        }
+
+        // Ensure arrays exist
+        appSpec.entities = appSpec.entities || [];
+        appSpec.pages = appSpec.pages || [];
+        appSpec.components = appSpec.components || [];
+        appSpec.actions = appSpec.actions || [];
+        appSpec.dataSources = appSpec.dataSources || [];
+        appSpec.workflows = appSpec.workflows || [];
+
+        console.log('[Gemini] Generated AppSpec with:');
+        console.log(`  - ${appSpec.entities.length} entities`);
+        console.log(`  - ${appSpec.pages.length} pages`);
+        console.log(`  - ${appSpec.components.length} components`);
+        console.log(`  - ${appSpec.actions.length} actions`);
+
+        // Transform Gemini format (entities/pages/components) to AppSpec format (layout.nodes)
+        const transformedSpec = transformGeminiToAppSpec(appSpec);
+        return transformedSpec;
+
+      } catch (error) {
+        lastError = error;
+        const errorAnalysis = handleGeminiError(error, attempt + 1, MAX_RETRIES);
+        
+        // Don't retry 400 errors
+        if (errorAnalysis.isBadRequest) {
+          console.error('[Gemini] Bad Request details:', error.message);
+          throw new Error(`Gemini Bad Request: ${error.message}`);
+        }
+        
+        // Retry with backoff for 429/network errors
+        if (errorAnalysis.shouldRetry && attempt < MAX_RETRIES - 1) {
+          const delay = getBackoffDelay(attempt);
+          console.log(`[Gemini] ⏳ Retrying in ${delay}ms...`);
+          await sleep(delay, true);
+          continue;
+        }
+        
+        // Max retries exhausted
+        if (attempt === MAX_RETRIES - 1) {
+          console.error(`[Gemini] ❌ Failed after ${MAX_RETRIES} attempts:`, error.message);
+          throw new Error(`Failed after ${MAX_RETRIES} attempts: ${error.message}`);
+        }
+        
+        throw error;
+      }
     }
-
-    // Ensure required top-level fields
-    if (!appSpec.metadata) {
-      appSpec.metadata = {
-        name: 'Generated App',
-        description: 'Generated by Gemini',
-        domain: 'generic'
-      };
-    }
-
-    if (!appSpec.version) {
-      appSpec.version = '2.0';
-    }
-
-    if (!appSpec.mode) {
-      appSpec.mode = 'generated';
-    }
-
-    // Ensure arrays exist
-    appSpec.entities = appSpec.entities || [];
-    appSpec.pages = appSpec.pages || [];
-    appSpec.components = appSpec.components || [];
-    appSpec.actions = appSpec.actions || [];
-    appSpec.dataSources = appSpec.dataSources || [];
-    appSpec.workflows = appSpec.workflows || [];
-
-    console.log('[Gemini] Generated AppSpec with:');
-    console.log(`  - ${appSpec.entities.length} entities`);
-    console.log(`  - ${appSpec.pages.length} pages`);
-    console.log(`  - ${appSpec.components.length} components`);
-    console.log(`  - ${appSpec.actions.length} actions`);
-
-    // Transform Gemini format (entities/pages/components) to AppSpec format (layout.nodes)
-    const transformedSpec = transformGeminiToAppSpec(appSpec);
-    return transformedSpec;
-
-  } catch (error) {
-    console.error('[Gemini] Generation error:', error.message);
-    throw new Error(`Gemini generation failed: ${error.message}`);
-  }
+    
+    throw lastError || new Error('Generation failed');
+  });
 }
 
 /**
@@ -219,53 +305,89 @@ export async function repairAppSpecWithGemini(repairInput) {
     throw new Error('Gemini not configured. Set GEMINI_API_KEY in .env');
   }
 
-  try {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 4096,
-        responseMimeType: 'application/json'
-      },
-      systemInstruction: APPSPEC_REPAIR_INSTRUCTION
-    });
+  return geminiQueue.add(async () => {
+    let lastError;
+    
+    // Retry loop with exponential backoff
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        console.log(`[Gemini] 🚀 Attempt ${attempt + 1}/${MAX_RETRIES} - Repairing AppSpec`);
 
-    const payload = {
-      prompt: repairInput.prompt,
-      invalidAppSpec: repairInput.invalidAppSpec,
-      problems: repairInput.problems
-    };
+        const model = genAI.getGenerativeModel({
+          model: 'gemini-2.0-flash-exp',
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 4096,
+            responseMimeType: 'application/json'
+          },
+          systemInstruction: APPSPEC_REPAIR_INSTRUCTION
+        });
 
-    const repairPromise = model.generateContent({
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: JSON.stringify(payload) }]
+        const payload = {
+          prompt: repairInput.prompt,
+          invalidAppSpec: repairInput.invalidAppSpec,
+          problems: repairInput.problems
+        };
+
+        const repairPromise = model.generateContent({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: JSON.stringify(payload) }]
+            }
+          ]
+        });
+
+        const result = await repairPromise;
+        const response = result.response;
+        const text = response.text();
+
+        console.log('[Gemini] ✅ Repair response received');
+
+        let repairedSpec;
+        try {
+          repairedSpec = JSON.parse(text);
+        } catch (parseError) {
+          console.error('[Gemini] Repair JSON parse error:', parseError.message);
+          console.error('[Gemini] Raw repair text:', text.substring(0, 500));
+          throw new Error('Gemini returned invalid JSON during repair');
         }
-      ]
-    });
 
-    const result = await repairPromise;
-    const response = result.response;
-    const text = response.text();
+        if (!repairedSpec.version) repairedSpec.version = '2.0';
+        if (!repairedSpec.mode) repairedSpec.mode = 'generated';
 
-    let repairedSpec;
-    try {
-      repairedSpec = JSON.parse(text);
-    } catch (parseError) {
-      console.error('[Gemini] Repair JSON parse error:', parseError.message);
-      console.error('[Gemini] Raw repair text:', text.substring(0, 500));
-      throw new Error('Gemini returned invalid JSON during repair');
+        return transformGeminiToAppSpec(repairedSpec);
+
+      } catch (error) {
+        lastError = error;
+        const errorAnalysis = handleGeminiError(error, attempt + 1, MAX_RETRIES);
+        
+        // Don't retry 400 errors
+        if (errorAnalysis.isBadRequest) {
+          console.error('[Gemini] Repair Bad Request details:', error.message);
+          throw new Error(`Gemini Repair Bad Request: ${error.message}`);
+        }
+        
+        // Retry with backoff for 429/network errors
+        if (errorAnalysis.shouldRetry && attempt < MAX_RETRIES - 1) {
+          const delay = getBackoffDelay(attempt);
+          console.log(`[Gemini] ⏳ Retrying repair in ${delay}ms...`);
+          await sleep(delay, true);
+          continue;
+        }
+        
+        // Max retries exhausted
+        if (attempt === MAX_RETRIES - 1) {
+          console.error(`[Gemini] ❌ Repair failed after ${MAX_RETRIES} attempts:`, error.message);
+          throw new Error(`Repair failed after ${MAX_RETRIES} attempts: ${error.message}`);
+        }
+        
+        throw error;
+      }
     }
-
-    if (!repairedSpec.version) repairedSpec.version = '2.0';
-    if (!repairedSpec.mode) repairedSpec.mode = 'generated';
-
-    return transformGeminiToAppSpec(repairedSpec);
-  } catch (error) {
-    console.error('[Gemini] Repair error:', error.message);
-    throw new Error(`Gemini repair failed: ${error.message}`);
-  }
+    
+    throw lastError || new Error('Repair failed');
+  });
 }
 
 /**
@@ -276,47 +398,80 @@ export async function refineAppSpecWithGemini(currentSpec, instructions) {
     throw new Error('Gemini not configured. Set GEMINI_API_KEY in .env');
   }
 
-  try {
-    console.log('[Gemini] Refining AppSpec with instructions:', instructions.substring(0, 100));
+  return geminiQueue.add(async () => {
+    let lastError;
+    
+    // Retry loop with exponential backoff
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        console.log(`[Gemini] 🚀 Attempt ${attempt + 1}/${MAX_RETRIES} - Refining AppSpec with instructions:`, instructions.substring(0, 100));
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 8192,
-        responseMimeType: 'application/json'
-      },
-      systemInstruction: `You are refining an existing AppSpec. Apply the user's changes surgically.
+        const model = genAI.getGenerativeModel({
+          model: 'gemini-2.0-flash-exp',
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 8192,
+            responseMimeType: 'application/json'
+          },
+          systemInstruction: `You are refining an existing AppSpec. Apply the user's changes surgically.
 
 Output ONLY the complete updated AppSpec JSON.
 Preserve all existing IDs and structure unless explicitly changing them.
 Only modify what the user requests.`
-    });
+        });
 
-    const prompt = `Current AppSpec:
+        const prompt = `Current AppSpec:
 ${JSON.stringify(currentSpec, null, 2)}
 
 User wants to: ${instructions}
 
 Return the complete updated AppSpec JSON.`;
 
-    // Note: Controller-level timeout is enforced at callAIWithTimeout()
-    // Do NOT enforce timeout here - let the controller manage it
-    const refinePromise = model.generateContent(prompt);
-    const result = await refinePromise;
-    const response = result.response;
-    const text = response.text();
+        // Note: Controller-level timeout is enforced at callAIWithTimeout()
+        // Do NOT enforce timeout here - let the controller manage it
+        const refinePromise = model.generateContent(prompt);
+        const result = await refinePromise;
+        const response = result.response;
+        const text = response.text();
 
-    const refinedSpec = JSON.parse(text);
-    refinedSpec.mode = 'refined';
+        console.log('[Gemini] ✅ Refinement response received');
 
-    console.log('[Gemini] Refinement complete');
-    return refinedSpec;
+        const refinedSpec = JSON.parse(text);
+        refinedSpec.mode = 'refined';
 
-  } catch (error) {
-    console.error('[Gemini] Refinement error:', error.message);
-    throw new Error(`Gemini refinement failed: ${error.message}`);
-  }
+        console.log('[Gemini] Refinement complete');
+        return refinedSpec;
+
+      } catch (error) {
+        lastError = error;
+        const errorAnalysis = handleGeminiError(error, attempt + 1, MAX_RETRIES);
+        
+        // Don't retry 400 errors
+        if (errorAnalysis.isBadRequest) {
+          console.error('[Gemini] Refinement Bad Request details:', error.message);
+          throw new Error(`Gemini Refinement Bad Request: ${error.message}`);
+        }
+        
+        // Retry with backoff for 429/network errors
+        if (errorAnalysis.shouldRetry && attempt < MAX_RETRIES - 1) {
+          const delay = getBackoffDelay(attempt);
+          console.log(`[Gemini] ⏳ Retrying refinement in ${delay}ms...`);
+          await sleep(delay, true);
+          continue;
+        }
+        
+        // Max retries exhausted
+        if (attempt === MAX_RETRIES - 1) {
+          console.error(`[Gemini] ❌ Refinement failed after ${MAX_RETRIES} attempts:`, error.message);
+          throw new Error(`Refinement failed after ${MAX_RETRIES} attempts: ${error.message}`);
+        }
+        
+        throw error;
+      }
+    }
+    
+    throw lastError || new Error('Refinement failed');
+  });
 }
 
 /**
