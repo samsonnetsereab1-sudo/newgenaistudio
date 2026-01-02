@@ -969,6 +969,13 @@ function ProblemCard({ problems, mode, app }) {
 function RenderApp({ app }) {
   if (!app || !app.children) return <div>No app to display</div>;
   
+  // ✅ ADD: State to track all form inputs
+  const [formData, setFormData] = useState({});
+  
+  const handleInputChange = (id, value) => {
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+  
   const renderNode = (node) => {
     if (!node) return null;
     const { id, type, props = {}, children = [] } = node;
@@ -1009,7 +1016,13 @@ function RenderApp({ app }) {
         return (
           <input
             key={id}
-            {...props}
+            id={id}
+            type={props.type || 'text'}
+            placeholder={props.placeholder}
+            value={formData[id] ?? props.value ?? ''}
+            onChange={(e) => handleInputChange(id, e.target.value)}
+            required={props.required}
+            disabled={props.disabled}
             style={{
               width: '100%',
               padding: '10px 12px',
@@ -1026,7 +1039,13 @@ function RenderApp({ app }) {
         return (
           <textarea
             key={id}
-            {...props}
+            id={id}
+            placeholder={props.placeholder}
+            value={formData[id] ?? props.value ?? ''}
+            onChange={(e) => handleInputChange(id, e.target.value)}
+            required={props.required}
+            disabled={props.disabled}
+            rows={props.rows || 4}
             style={{
               width: '100%',
               padding: '10px 12px',
@@ -1045,7 +1064,11 @@ function RenderApp({ app }) {
         return (
           <select
             key={id}
-            {...props}
+            id={id}
+            value={formData[id] ?? props.value ?? ''}
+            onChange={(e) => handleInputChange(id, e.target.value)}
+            required={props.required}
+            disabled={props.disabled}
             style={{
               width: '100%',
               padding: '10px 12px',
@@ -1053,9 +1076,21 @@ function RenderApp({ app }) {
               border: '1px solid #e2e8f0',
               fontSize: '14px',
               marginBottom: '12px',
+              background: 'white',
+              cursor: 'pointer',
               ...props.style
             }}
           >
+            {props.placeholder && (
+              <option value="" disabled>
+                {props.placeholder}
+              </option>
+            )}
+            {(props.options || []).map((option, idx) => (
+              <option key={idx} value={typeof option === 'string' ? option : option.value}>
+                {typeof option === 'string' ? option : option.label}
+              </option>
+            ))}
             {children}
           </select>
         );
@@ -1085,17 +1120,18 @@ function RenderApp({ app }) {
         return (
           <label
             key={id}
-            {...props}
+            htmlFor={props.for || props.htmlFor}
             style={{
               display: 'block',
               marginBottom: '6px',
               fontWeight: '600',
               color: '#0f172a',
               fontSize: '14px',
+              cursor: props.for || props.htmlFor ? 'pointer' : 'default',
               ...props.style
             }}
           >
-            {props.text || props.children || ''}
+            {props.text || props.label || props.children || ''}
           </label>
         );
       
