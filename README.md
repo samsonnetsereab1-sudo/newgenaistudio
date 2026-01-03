@@ -34,6 +34,44 @@ curl http://localhost:4000/api/health
 # → {"status":"ok"}
 ```
 
+## Import from BASE44
+
+NewGen Studio supports importing applications from BASE44 format:
+
+1. Click the **"Import BASE44"** button in the Build page
+2. Select a BASE44 JSON file from your computer
+3. The app structure will be automatically converted to a human-readable prompt
+4. Review the generated prompt text in the textarea
+5. Click **"Generate App"** to create the application from the imported structure
+
+**Example BASE44 file format:**
+```json
+{
+  "name": "Customer Dashboard",
+  "components": [
+    {
+      "type": "table",
+      "props": {
+        "title": "Customer List",
+        "columns": ["Name", "Email", "Phone"],
+        "data": [
+          {"Name": "John Doe", "Email": "john@example.com", "Phone": "555-1234"}
+        ]
+      }
+    },
+    {
+      "type": "card",
+      "props": {
+        "title": "Total Customers",
+        "value": "42"
+      }
+    }
+  ]
+}
+```
+
+**Sample test file:** See `test-import.json` in the project root for a complete example.
+
 ---
 
 ## Production Overview
