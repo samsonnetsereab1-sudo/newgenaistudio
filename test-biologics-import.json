@@ -1,0 +1,74 @@
+{
+  "name": "Fermentation Monitoring Dashboard",
+  "project": {
+    "name": "Bioprocess Control System",
+    "domain": "biologics"
+  },
+  "layout": {
+    "name": "Fermentation Dashboard",
+    "components": [
+      {
+        "type": "section",
+        "props": {
+          "title": "Real-time Monitoring"
+        }
+      },
+      {
+        "type": "table",
+        "props": {
+          "title": "Batch Status",
+          "columns": ["Batch ID", "Reactor", "Temperature (°C)", "pH", "DO (%)", "Status"],
+          "data": [
+            {
+              "Batch ID": "BTC-2024-001",
+              "Reactor": "R-101",
+              "Temperature (°C)": "37.2",
+              "pH": "7.1",
+              "DO (%)": "45",
+              "Status": "Active"
+            },
+            {
+              "Batch ID": "BTC-2024-002",
+              "Reactor": "R-102",
+              "Temperature (°C)": "36.8",
+              "pH": "7.0",
+              "DO (%)": "42",
+              "Status": "Active"
+            }
+          ]
+        }
+      },
+      {
+        "type": "card",
+        "props": {
+          "title": "Active Batches",
+          "value": "8"
+        }
+      },
+      {
+        "type": "card",
+        "props": {
+          "title": "Alerts",
+          "value": "2"
+        }
+      },
+      {
+        "type": "form",
+        "props": {
+          "title": "Sample Collection",
+          "fields": [
+            { "name": "sample_id", "label": "Sample ID", "type": "text" },
+            { "name": "batch_id", "label": "Batch ID", "type": "text" },
+            { "name": "volume_ml", "label": "Volume (mL)", "type": "number" }
+          ]
+        }
+      },
+      {
+        "type": "button",
+        "props": {
+          "label": "Generate Report"
+        }
+      }
+    ]
+  }
+}

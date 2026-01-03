@@ -577,27 +577,138 @@ function BuildPage() {
     return null;
   };
 
+  /**
+   * Convert Base44 JSON to NewGen prompt text
+   * @param {Object} base44Json - The imported Base44 format JSON
+   * @returns {string} - Human-readable prompt text
+   */
+  const convertBase44ToPrompt = (base44Json) => {
+    const parts = [];
+    
+    // Add app name/title
+    if (base44Json.name || base44Json.title) {
+      parts.push((base44Json.name || base44Json.title).toLowerCase());
+    } else if (base44Json.project?.name) {
+      parts.push(base44Json.project.name.toLowerCase());
+    } else if (base44Json.layout?.name) {
+      parts.push(base44Json.layout.name.toLowerCase());
+    }
+    
+    // Process components from various possible locations
+    const components = base44Json.components || 
+                      base44Json.children || 
+                      base44Json.layout?.components ||
+                      base44Json.layout?.nodes ||
+                      [];
+    
+    components.forEach(component => {
+      const type = component.type;
+      const props = component.props || {};
+      
+      // Handle table components
+      if (type === 'table' || type === 'Table') {
+        parts.push('with table');
+        
+        // Add columns
+        if (props.columns && props.columns.length > 0) {
+          const columnNames = props.columns.map(col => 
+            typeof col === 'string' ? col : (col.label || col.key || col)
+          );
+          parts.push(`Columns: ${columnNames.join(', ')}`);
+        }
+        
+        // Add sample data (first 2-3 rows)
+        const data = props.data || props.rows || [];
+        if (data.length > 0) {
+          const sampleRows = data.slice(0, 2).map(row => {
+            const columnNames = props.columns.map(col => 
+              typeof col === 'string' ? col : (col.key || col.label)
+            );
+            return columnNames.map(colKey => row[colKey] || '-').join(' / ');
+          });
+          parts.push(`Data: ${sampleRows.join(', ')}`);
+        }
+      }
+      
+      // Handle form components
+      else if (type === 'form' || type === 'Form') {
+        parts.push('with form');
+        
+        const fields = props.fields || props.inputs || [];
+        if (fields.length > 0) {
+          const fieldNames = fields.map(f => f.name || f.label || f.key).join(', ');
+          parts.push(`Fields: ${fieldNames}`);
+        }
+      }
+      
+      // Handle card/metric components
+      else if (type === 'card' || type === 'Card' || type === 'metric') {
+        if (props.title && props.value) {
+          parts.push(`${props.title}: ${props.value}`);
+        } else if (props.title) {
+          parts.push(`${props.title} card`);
+        }
+      }
+      
+      // Handle section components
+      else if (type === 'section' || type === 'Section') {
+        if (props.title) {
+          parts.push(`section: ${props.title}`);
+        }
+      }
+      
+      // Handle button components
+      else if (type === 'button' || type === 'Button') {
+        if (props.label || props.text) {
+          parts.push(`button: ${props.label || props.text}`);
+        }
+      }
+      
+      // Generic component handling
+      else if (type) {
+        parts.push(`with ${type}`);
+      }
+    });
+    
+    // Join parts into readable prompt
+    return parts.join('. ') + (parts.length > 0 ? '.' : '');
+  };
+
   const handleImportFile = async (file) => {
     try {
+      // Read file contents
       const text = await file.text();
-      const manifest = JSON.parse(text);
-      const data = await importFromPlatform({
-        source: 'base44',
-        manifest,
-        projectName: manifest?.project?.name || 'Imported Project'
-      });
-      const frontend = data.frontend || null;
-      if (!frontend || !Array.isArray(frontend.children)) {
-        setProblems([{ severity: 'error', message: 'Import succeeded but AppSpec conversion failed.' }]);
+      const importedData = JSON.parse(text);
+      
+      // Convert Base44 JSON to prompt text
+      const promptText = convertBase44ToPrompt(importedData);
+      
+      if (promptText) {
+        // Update prompt state
+        setPrompt(promptText);
+        
+        console.log('✅ Imported Base44 and populated prompt:', promptText);
+        
+        // Clear any existing generated app and show success
+        setProblems([{ 
+          severity: 'info', 
+          message: 'BASE44 file imported successfully. Review the prompt and click "Generate App" to create your app.' 
+        }]);
         setGeneratedApp(null);
-        return;
+        setMode(null);
+      } else {
+        setProblems([{ 
+          severity: 'warning', 
+          message: 'Imported file does not contain valid Base44 components. Please check the file format.' 
+        }]);
       }
-      setGeneratedApp(frontend);
-      setProblems([]);
-      setMode('imported');
-    } catch (e) {
-      console.error('Import error:', e);
-      setProblems([{ severity: 'error', message: 'Invalid file or server error. Please select a valid .base44.json.' }]);
+      
+    } catch (error) {
+      console.error('❌ Import failed:', error);
+      setProblems([{ 
+        severity: 'error', 
+        message: 'Failed to import file. Please ensure it is valid JSON.' 
+      }]);
     }
   };
 

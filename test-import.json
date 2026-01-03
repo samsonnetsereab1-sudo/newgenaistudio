@@ -1,0 +1,23 @@
+{
+  "name": "Customer Dashboard",
+  "components": [
+    {
+      "type": "table",
+      "props": {
+        "title": "Customer List",
+        "columns": ["Name", "Email", "Phone"],
+        "data": [
+          {"Name": "John Doe", "Email": "john@example.com", "Phone": "555-1234"},
+          {"Name": "Jane Smith", "Email": "jane@example.com", "Phone": "555-5678"}
+        ]
+      }
+    },
+    {
+      "type": "card",
+      "props": {
+        "title": "Total Customers",
+        "value": "42"
+      }
+    }
+  ]
+}
